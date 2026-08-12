@@ -13,10 +13,10 @@ app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
-    modelo = 'gemini-1.5-flash'
+    modelo = 'gemini-1.5-flash-latest'
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+    url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
     
     payload = {
         "contents": [{
