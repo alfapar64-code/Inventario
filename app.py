@@ -12,28 +12,25 @@ app = Flask(__name__)
 api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
 
-# FUNCIÓN PILOTO AUTOMÁTICO: Busca el modelo que esté disponible en tu Llave
-def analizar_con_ia(prompt, image):
-    modelos_respaldo = [
-        'gemini-1.5-flash', 
-        'gemini-1.5-pro', 
-        'gemini-1.5-flash-002', 
-        'gemini-1.0-pro-vision-latest', 
-        'gemini-pro-vision'
-    ]
-    
-    ultimo_error = None
+def analizar_con_ia(prompt, img_bytes):
+    modelos_respaldo = ['gemini-1.5-flash', 'gemini-1.5-pro']
+    ultimo_error = ""
     for nombre in modelos_respaldo:
         try:
-            print(f"Intentando usar el modelo: {nombre}...")
             modelo_temporal = genai.GenerativeModel(nombre)
-            respuesta = modelo_temporal.generate_content([prompt, image])
-            return respuesta # ¡Si funciona, devuelve la respuesta y sale!
+            # Enviar la imagen como datos binarios JPEG puros para evitar que Google la rechace
+            imagen_segura = {
+                "mime_type": "image/jpeg",
+                "data": img_bytes
+            }
+            respuesta = modelo_temporal.generate_content([prompt, imagen_segura])
+            return respuesta
         except Exception as e:
             ultimo_error = str(e)
-            continue # Si falla, intenta automáticamente con el siguiente
+            continue
             
-    raise Exception(f"Ningún modelo quiso funcionar. Verifica la foto o intenta de nuevo.")
+    # Si todo falla, mostramos el error EXACTO de Google para no adivinar más
+    raise Exception(f"Último error de Google: {ultimo_error}")
 
 @app.route('/')
 def index():
@@ -44,26 +41,31 @@ def calcular():
     sabor = request.form.get('sabor')
     foto = request.files.get('foto') or request.files.get('foto_galeria')
 
-    def preparar_imagen(archivo_foto):
+    def preparar_imagen_segura(archivo_foto):
+        # 1. Leemos la foto (sea HEIC, PNG o JPG)
         img = Image.open(io.BytesIO(archivo_foto.read()))
-        if img.mode in ("RGBA", "P", "CMYK"):
+        if img.mode != "RGB":
             img = img.convert("RGB")
-        img.thumbnail((800, 800)) 
-        return img
+        img.thumbnail((800, 800))
+        
+        # 2. La transformamos obligatoriamente a un JPEG estándar en la memoria
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG")
+        return buffer.getvalue()
 
     try:
         if sabor == 'MOSTRADOR_COMPLETO':
             if not foto or foto.filename == '':
                 return jsonify({'error': 'Falta la foto'})
             
-            image = preparar_imagen(foto)
+            img_bytes = preparar_imagen_segura(foto)
             prompt = (
                 "Analiza la vitrina de empanadas. Carriles: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
                 "Devuelve SOLO un JSON válido. Ejemplo: {\"JQ\": 5, \"HM\": 2, \"CQ\": 0, ...}."
                 "Suma carril 1 y 12 en JQ."
             )
             
-            response = analizar_con_ia(prompt, image)
+            response = analizar_con_ia(prompt, img_bytes)
             texto = response.text.strip().replace('```json', '').replace('```', '')
             datos = json.loads(texto)
             return jsonify({'tipo': 'mostrador', 'datos': datos})
@@ -77,10 +79,10 @@ def calcular():
             total_ia = 0
             
             if foto and foto.filename != '':
-                image = preparar_imagen(foto)
+                img_bytes = preparar_imagen_segura(foto)
                 prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
                 
-                response = analizar_con_ia(prompt, image)
+                response = analizar_con_ia(prompt, img_bytes)
                 texto = response.text.strip().replace('```json', '').replace('```', '')
                 try:
                     data = json.loads(texto)
@@ -91,7 +93,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': f'Error de IA: {str(e)}'})
+        return jsonify({'error': f'{str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
