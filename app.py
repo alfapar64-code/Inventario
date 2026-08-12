@@ -13,8 +13,8 @@ app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
-    # Usamos v1beta que es la ruta correcta para gemini-1.5
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    modelo = "gemini-1.5-flash"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     
@@ -35,8 +35,21 @@ def llamar_google_directo(prompt, img_bytes):
             res_data = json.loads(response.read().decode('utf-8'))
             return res_data['candidates'][0]['content']['parts'][0]['text']
     except urllib.error.HTTPError as e:
-        error_msg = e.read().decode('utf-8')
-        raise Exception(f"Error de Google: {error_msg}")
+        # ¡LA TRAMPA! Si falla, le exigimos a Google que nos diga qué modelos sí existen
+        try:
+            list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+            req_list = urllib.request.Request(list_url)
+            with urllib.request.urlopen(req_list) as resp_list:
+                list_data = json.loads(resp_list.read().decode('utf-8'))
+                # Extraemos solo los nombres de los modelos que procesan contenido
+                modelos = [m['name'].replace('models/', '') for m in list_data.get('models', []) if 'generateContent' in m.get('supportedGenerationMethods', [])]
+                nombres_juntos = ", ".join(modelos)
+                raise Exception(f"¡Modelos descubiertos!: {nombres_juntos}")
+        except Exception as ex:
+            if "¡Modelos descubiertos!" in str(ex):
+                raise ex
+            error_msg = e.read().decode('utf-8')
+            raise Exception(f"Error de Google: {error_msg}")
 
 @app.route('/')
 def index():
