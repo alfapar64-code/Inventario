@@ -15,41 +15,35 @@ def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     
-    # Solo los modelos modernos (eliminamos los viejos que causan el 404 fantasma)
-    modelos = ['gemini-1.5-flash', 'gemini-1.5-pro']
-    ultimo_error = ""
+    # Usamos únicamente gemini-1.5-flash para ir a tiro fijo
+    modelo = 'gemini-1.5-flash'
     
-    for modelo in modelos:
+    try:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt},
+                    {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}
+                ]
+            }]
+        }
+        data_bytes = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+        
+        with urllib.request.urlopen(req) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            return res_data['candidates'][0]['content']['parts'][0]['text']
+            
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode('utf-8')
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
-            payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": prompt},
-                        # AQUI ESTABA MI ERROR: Google exige inlineData y mimeType (con mayúsculas, sin guión bajo)
-                        {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}
-                    ]
-                }]
-            }
-            data_bytes = json.dumps(payload).encode('utf-8')
-            req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
-            
-            with urllib.request.urlopen(req) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                return res_data['candidates'][0]['content']['parts'][0]['text']
-                
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode('utf-8')
-            try:
-                ultimo_error = json.loads(err_msg)['error']['message']
-            except:
-                ultimo_error = str(e)
-            continue
-        except Exception as e:
-            ultimo_error = str(e)
-            continue
-            
-    raise Exception(f"Detalle técnico de Google: {ultimo_error}")
+            error_real = json.loads(err_msg)['error']['message']
+        except:
+            error_real = str(e)
+        raise Exception(f"Google dice: {error_real}")
+    except Exception as e:
+        raise Exception(f"Error: {str(e)}")
 
 @app.route('/')
 def index():
@@ -105,7 +99,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': f'Error: {str(e)}'})
+        return jsonify({'error': f'{str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
