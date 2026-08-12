@@ -11,19 +11,12 @@ from pillow_heif import register_heif_opener
 register_heif_opener()
 app = Flask(__name__)
 
-# FUNCIÓN NUCLEAR: Habla directo con Google sin usar su librería problemática
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     
-    # Lista de todos los modelos, del más nuevo al más viejo
-    modelos = [
-        'gemini-1.5-flash',
-        'gemini-1.5-pro',
-        'gemini-1.0-pro-vision-latest',
-        'gemini-pro-vision'
-    ]
-    
+    # Solo los modelos modernos (eliminamos los viejos que causan el 404 fantasma)
+    modelos = ['gemini-1.5-flash', 'gemini-1.5-pro']
     ultimo_error = ""
     
     for modelo in modelos:
@@ -33,7 +26,8 @@ def llamar_google_directo(prompt, img_bytes):
                 "contents": [{
                     "parts": [
                         {"text": prompt},
-                        {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}}
+                        # AQUI ESTABA MI ERROR: Google exige inlineData y mimeType (con mayúsculas, sin guión bajo)
+                        {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}
                     ]
                 }]
             }
@@ -42,7 +36,6 @@ def llamar_google_directo(prompt, img_bytes):
             
             with urllib.request.urlopen(req) as response:
                 res_data = json.loads(response.read().decode('utf-8'))
-                # Si Google responde bien, extrae el texto y termina
                 return res_data['candidates'][0]['content']['parts'][0]['text']
                 
         except urllib.error.HTTPError as e:
@@ -51,12 +44,12 @@ def llamar_google_directo(prompt, img_bytes):
                 ultimo_error = json.loads(err_msg)['error']['message']
             except:
                 ultimo_error = str(e)
-            continue # Falla este modelo, intenta rápido con el siguiente
+            continue
         except Exception as e:
             ultimo_error = str(e)
             continue
             
-    raise Exception(f"Ningún modelo aceptó la llave. Último mensaje de Google: {ultimo_error}")
+    raise Exception(f"Detalle técnico de Google: {ultimo_error}")
 
 @app.route('/')
 def index():
@@ -71,7 +64,6 @@ def calcular():
         return jsonify({'error': 'Falta la foto'})
 
     try:
-        # Convertimos la foto a un JPEG seguro en memoria
         img = Image.open(io.BytesIO(foto.read()))
         if img.mode != "RGB":
             img = img.convert("RGB")
@@ -113,7 +105,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': f'Error de conexión directa: {str(e)}'})
+        return jsonify({'error': f'Error: {str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
