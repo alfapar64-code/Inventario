@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 from PIL import Image
 import io
 import json
+import os
 import base64
 import urllib.request
 import urllib.error
@@ -11,12 +12,8 @@ register_heif_opener()
 app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
-    # Usamos una clave y modelo universal que jamás falla
-    api_key = "AIzaSyD-..." # Llave universal de respaldo integrada
-    modelo = 'gemini-pro-vision'
-    
-    # Si prefieres usar la tuya de Render, descomenta la siguiente línea:
-    # api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("GEMINI_API_KEY")
+    modelo = 'gemini-1.5-flash'
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
@@ -39,17 +36,14 @@ def llamar_google_directo(prompt, img_bytes):
             return res_data['candidates'][0]['content']['parts'][0]['text']
             
     except urllib.error.HTTPError as e:
-        # PLAN B: Si la ruta v1beta falla, probamos con la clásica v1 al instante
+        err_msg = e.read().decode('utf-8')
         try:
-            url_v1 = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
-            req_v1 = urllib.request.Request(url_v1, data=data_bytes, headers={'Content-Type': 'application/json'})
-            with urllib.request.urlopen(req_v1) as resp_v1:
-                res_data = json.loads(resp_v1.read().decode('utf-8'))
-                return res_data['candidates'][0]['content']['parts'][0]['text']
-        except Exception as ex:
-            raise Exception(f"Error de conexión: {str(ex)}")
+            error_real = json.loads(err_msg)['error']['message']
+        except:
+            error_real = str(e)
+        raise Exception(f"Google dice: {error_real}")
     except Exception as e:
-        raise Exception(f"Error: {str(e)}")
+        raise Exception(f"Error de conexión: {str(e)}")
 
 @app.route('/')
 def index():
