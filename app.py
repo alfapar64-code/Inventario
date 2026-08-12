@@ -13,11 +13,12 @@ app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
-    modelo = "gemini-1.5-flash"
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+    
+    # SUSTITUCIÓN CRUCIAL: Usamos el modelo validado en tu lista
+    modelo = 'gemini-2.5-flash'
+    url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    
     payload = {
         "contents": [{
             "parts": [
@@ -30,26 +31,9 @@ def llamar_google_directo(prompt, img_bytes):
     data_bytes = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
     
-    try:
-        with urllib.request.urlopen(req) as response:
-            res_data = json.loads(response.read().decode('utf-8'))
-            return res_data['candidates'][0]['content']['parts'][0]['text']
-    except urllib.error.HTTPError as e:
-        # ¡LA TRAMPA! Si falla, le exigimos a Google que nos diga qué modelos sí existen
-        try:
-            list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-            req_list = urllib.request.Request(list_url)
-            with urllib.request.urlopen(req_list) as resp_list:
-                list_data = json.loads(resp_list.read().decode('utf-8'))
-                # Extraemos solo los nombres de los modelos que procesan contenido
-                modelos = [m['name'].replace('models/', '') for m in list_data.get('models', []) if 'generateContent' in m.get('supportedGenerationMethods', [])]
-                nombres_juntos = ", ".join(modelos)
-                raise Exception(f"¡Modelos descubiertos!: {nombres_juntos}")
-        except Exception as ex:
-            if "¡Modelos descubiertos!" in str(ex):
-                raise ex
-            error_msg = e.read().decode('utf-8')
-            raise Exception(f"Error de Google: {error_msg}")
+    with urllib.request.urlopen(req) as response:
+        res_data = json.loads(response.read().decode('utf-8'))
+        return res_data['candidates'][0]['content']['parts'][0]['text']
 
 @app.route('/')
 def index():
@@ -103,7 +87,11 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': str(e)})
+        # Incluimos el rastreo de errores detallado por si acaso
+        error_msg = str(e)
+        if hasattr(e, 'read'):
+            error_msg += f" - Google detallado: {e.read().decode('utf-8')}"
+        return jsonify({'error': error_msg})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
