@@ -4,6 +4,7 @@ from PIL import Image
 import io
 import json
 import os
+import traceback
 from pillow_heif import register_heif_opener
 
 # Habilitar soporte para fotos .heic
@@ -11,10 +12,8 @@ register_heif_opener()
 
 app = Flask(__name__)
 
-# CONFIGURACIÓN SEGURA DE LA API KEY
 api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
-
 model = genai.GenerativeModel('gemini-1.5-flash')
 
 @app.route('/')
@@ -24,70 +23,60 @@ def index():
 @app.route('/calcular', methods=['POST'])
 def calcular():
     sabor = request.form.get('sabor')
-    # Acepta la foto tanto si viene de la cámara como si se elige de la galería
+    # Intentar obtener foto de cámara o de galería
     foto = request.files.get('foto') or request.files.get('foto_galeria')
 
-    # Función para optimizar y reducir la imagen (cuida la memoria del servidor)
     def preparar_imagen(archivo_foto):
-        img = Image.open(io.BytesIO(archivo_foto.read()))
-        if img.mode in ("RGBA", "P", "CMYK"):
-            img = img.convert("RGB")
-        img.thumbnail((1024, 1024))
-        return img
+        try:
+            # Abrir archivo y convertir a RGB
+            img = Image.open(archivo_foto)
+            if img.mode in ("RGBA", "P", "CMYK"):
+                img = img.convert("RGB")
+            # Reducir tamaño drásticamente para ahorrar RAM y evitar error de Render
+            img.thumbnail((800, 800)) 
+            return img
+        except Exception as e:
+            print(f"Error crítico en preparar_imagen: {traceback.format_exc()}")
+            raise e
 
-    # LÓGICA 1: MOSTRADOR COMPLETO (1 Foto -> 12 Carriles)
     if sabor == 'MOSTRADOR_COMPLETO':
         if not foto or foto.filename == '':
-            return jsonify({'error': 'Necesitas adjuntar o tomar una foto de la vitrina.'})
+            return jsonify({'error': 'Por favor, toma una foto o selecciona una de la galería.'})
         
         try:
             image = preparar_imagen(foto)
             prompt = (
-                "Eres un asistente experto en inventarios. Analiza esta vitrina de empanadas que tiene 12 carriles físicos. "
-                "De izquierda a derecha, los carriles corresponden a: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
-                "Cuenta minuciosamente la cantidad de empanadas visibles en cada carril. "
-                "Devuelve ÚNICAMENTE un objeto JSON válido donde las claves sean las iniciales y el valor sea el conteo de unidades. "
-                "IMPORTANTE: Suma el conteo del carril 1 y el carril 12 juntos bajo la clave 'JQ'. "
-                "Formato estricto requerido de ejemplo: {\"JQ\": 9, \"HM\": 2, \"CQ\": 1, \"CA\": 1, \"RJ\": 2, \"BD\": 2, \"CP\": 4, \"PL\": 6, \"CB\": 7, \"CC\": 4, \"CS\": 6}"
+                "Analiza esta vitrina. Carriles: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
+                "Devuelve SOLO un JSON con las iniciales (JQ, HM, etc.) y conteo. Suma carril 1 y 12 en 'JQ'. "
+                "Ejemplo: {\"JQ\": 5, \"HM\": 2}"
             )
-            
             response = model.generate_content([prompt, image])
             texto = response.text.strip().strip('```json').strip('```')
             datos_mostrador = json.loads(texto)
             return jsonify({'tipo': 'mostrador', 'datos': datos_mostrador})
         except Exception as e:
-            return jsonify({'error': 'No se pudo leer la vitrina. Asegúrate de que la foto sea clara.'})
+            print(f"Error procesando vitrina: {e}")
+            return jsonify({'error': 'No pude leer la foto. Prueba con una luz más uniforme.'})
 
-    # LÓGICA 2: CARGA INDIVIDUAL POR SABOR (Manual + Foto Incompletos)
     else:
         cajones = int(request.form.get('cajones', 0) or 0)
         bandejas = int(request.form.get('bandejas', 0) or 0)
         espera = int(request.form.get('espera', 0) or 0)
         
-        multiplicador_cajon = 14 if 'Burrito' in sabor else 30
-        total_manual = (cajones * multiplicador_cajon) + (bandejas * 40) + espera
+        multiplicador = 14 if 'Burrito' in sabor else 30
+        total_manual = (cajones * multiplicador) + (bandejas * 40) + espera
         
         total_ia = 0
         if foto and foto.filename != '':
             try:
                 image = preparar_imagen(foto)
-                prompt = (
-                    f"Eres un asistente de inventario. En la imagen hay empanadas/burritos de {sabor}. "
-                    "Cuenta cuidadosamente la cantidad exacta de unidades visibles. "
-                    "Responde ÚNICAMENTE con el número final, sin letras ni texto adicional."
-                )
+                prompt = f"Cuenta solo la cantidad exacta de unidades de {sabor} en la imagen. Responde solo el número."
                 response = model.generate_content([prompt, image])
                 total_ia = int(''.join(filter(str.isdigit, response.text)))
-            except Exception:
+            except:
                 total_ia = 0
                 
-        total_final = total_manual + total_ia
-        
-        return jsonify({
-            'tipo': 'individual',
-            'sabor': sabor,
-            'total': total_final
-        })
+        return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0')
+    app.run(host='0.0.0.0', port=5000)
