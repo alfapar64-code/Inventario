@@ -27,7 +27,6 @@ def calcular():
 
     def preparar_imagen(archivo_foto):
         try:
-            # Usar io.BytesIO para que Pillow lea correctamente el archivo subido desde Flask
             img = Image.open(io.BytesIO(archivo_foto.read()))
             if img.mode in ("RGBA", "P", "CMYK"):
                 img = img.convert("RGB")
@@ -68,9 +67,16 @@ def calcular():
         if foto and foto.filename != '':
             try:
                 image = preparar_imagen(foto)
-                prompt = f"Cuenta solo la cantidad exacta de unidades de {sabor} en la imagen. Responde solo el número."
+                prompt = (
+                    f"Analiza este cajón de empanadas de {sabor}. "
+                    "Cuenta cuidadosamente cuántas empanadas físicas hay dentro del cajón. "
+                    "IMPORTANTE: IGNORA todos los números, fechas, lotes y temperaturas que aparecen en la etiqueta blanca de abajo. "
+                    "Devuelve ÚNICAMENTE un objeto JSON válido con este formato exacto: {\"cantidad\": número}"
+                )
                 response = model.generate_content([prompt, image])
-                total_ia = int(''.join(filter(str.isdigit, response.text)))
+                texto = response.text.strip().strip('```json').strip('```')
+                data_json = json.loads(texto)
+                total_ia = int(data_json.get('cantidad', 0))
             except Exception as e:
                 print(f"Error en conteo individual: {e}")
                 total_ia = 0
