@@ -24,22 +24,21 @@ def index():
 @app.route('/calcular', methods=['POST'])
 def calcular():
     sabor = request.form.get('sabor')
-    foto = request.files.get('foto')
+    # Acepta la foto tanto si viene de la cámara como si se elige de la galería
+    foto = request.files.get('foto') or request.files.get('foto_galeria')
 
-    # Función para optimizar y reducir la imagen (evita que se sature la memoria de Render)
+    # Función para optimizar y reducir la imagen (cuida la memoria del servidor)
     def preparar_imagen(archivo_foto):
         img = Image.open(io.BytesIO(archivo_foto.read()))
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
-        
-        # Redimensionar manteniendo la proporción para que pese muy poco en la memoria (máximo 1024px)
         img.thumbnail((1024, 1024))
         return img
 
     # LÓGICA 1: MOSTRADOR COMPLETO (1 Foto -> 12 Carriles)
     if sabor == 'MOSTRADOR_COMPLETO':
         if not foto or foto.filename == '':
-            return jsonify({'error': 'Necesitas adjuntar la foto de la vitrina.'})
+            return jsonify({'error': 'Necesitas adjuntar o tomar una foto de la vitrina.'})
         
         try:
             image = preparar_imagen(foto)
@@ -79,9 +78,7 @@ def calcular():
                 )
                 response = model.generate_content([prompt, image])
                 total_ia = int(''.join(filter(str.isdigit, response.text)))
-            except ValueError:
-                total_ia = 0
-            except Exception as e:
+            except Exception:
                 total_ia = 0
                 
         total_final = total_manual + total_ia
