@@ -15,55 +15,36 @@ def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     
-    # 1. AUTO-DESCUBRIMIENTO: Le preguntamos a Google qué modelo acepta tu Llave exacta
-    modelo_detectado = 'gemini-1.5-flash' # Valor por defecto
-    try:
-        list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
-        req_list = urllib.request.Request(list_url)
-        with urllib.request.urlopen(req_list) as resp_list:
-            list_data = json.loads(resp_list.read().decode('utf-8'))
-            for m in list_data.get('models', []):
-                methods = m.get('supportedGenerationMethods', [])
-                m_name = m.get('name', '')
-                if 'generateContent' in methods and 'gemini' in m_name:
-                    modelo_detectado = m_name.replace('models/', '')
-                    break
-    except Exception:
-        pass
-
-    # 2. Intentamos conectar probando las rutas oficiales (v1beta y v1) con el modelo descubierto
-    versiones = ['v1beta', 'v1']
-    ultimo_error = ""
+    # Forzamos el modelo estándar y disponible gemini-1.5-flash en la ruta v1 oficial
+    modelo = 'gemini-1.5-flash'
+    url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
     
-    for ver in versiones:
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}
+            ]
+        }]
+    }
+    
+    try:
+        data_bytes = json.dumps(payload).encode('utf-8')
+        req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+        
+        with urllib.request.urlopen(req) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            return res_data['candidates'][0]['content']['parts'][0]['text']
+            
+    except urllib.error.HTTPError as e:
+        err_msg = e.read().decode('utf-8')
         try:
-            url = f"https://generativelanguage.googleapis.com/{ver}/models/{modelo_detectado}:generateContent?key={api_key}"
-            payload = {
-                "contents": [{
-                    "parts": [
-                        {"text": prompt},
-                        {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}
-                    ]
-                }]
-            }
-            data_bytes = json.dumps(payload).encode('utf-8')
-            req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
-            
-            with urllib.request.urlopen(req) as response:
-                res_data = json.loads(response.read().decode('utf-8'))
-                return res_data['candidates'][0]['content']['parts'][0]['text']
-        except urllib.error.HTTPError as e:
-            err_msg = e.read().decode('utf-8')
-            try:
-                ultimo_error = json.loads(err_msg)['error']['message']
-            except:
-                ultimo_error = str(e)
-            continue
-        except Exception as e:
-            ultimo_error = str(e)
-            continue
-            
-    raise Exception(f"Modelo ({modelo_detectado}): {ultimo_error}")
+            error_real = json.loads(err_msg)['error']['message']
+        except:
+            error_real = str(e)
+        raise Exception(f"Google dice: {error_real}")
+    except Exception as e:
+        raise Exception(f"Error de conexión: {str(e)}")
 
 @app.route('/')
 def index():
