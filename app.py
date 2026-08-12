@@ -13,12 +13,13 @@ api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
 
 def analizar_con_ia(prompt, img_bytes):
-    modelos_respaldo = ['gemini-1.5-flash', 'gemini-1.5-pro']
+    # Agregamos el modelo clásico 'gemini-pro-vision' que NUNCA falla en versiones antiguas
+    modelos_respaldo = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro-vision']
     ultimo_error = ""
     for nombre in modelos_respaldo:
         try:
+            print(f"Probando modelo: {nombre}")
             modelo_temporal = genai.GenerativeModel(nombre)
-            # Enviar la imagen como datos binarios JPEG puros para evitar que Google la rechace
             imagen_segura = {
                 "mime_type": "image/jpeg",
                 "data": img_bytes
@@ -29,7 +30,6 @@ def analizar_con_ia(prompt, img_bytes):
             ultimo_error = str(e)
             continue
             
-    # Si todo falla, mostramos el error EXACTO de Google para no adivinar más
     raise Exception(f"Último error de Google: {ultimo_error}")
 
 @app.route('/')
@@ -42,13 +42,10 @@ def calcular():
     foto = request.files.get('foto') or request.files.get('foto_galeria')
 
     def preparar_imagen_segura(archivo_foto):
-        # 1. Leemos la foto (sea HEIC, PNG o JPG)
         img = Image.open(io.BytesIO(archivo_foto.read()))
         if img.mode != "RGB":
             img = img.convert("RGB")
         img.thumbnail((800, 800))
-        
-        # 2. La transformamos obligatoriamente a un JPEG estándar en la memoria
         buffer = io.BytesIO()
         img.save(buffer, format="JPEG")
         return buffer.getvalue()
