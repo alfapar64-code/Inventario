@@ -1,0 +1,21 @@
+{
+  "name": "Inventario Rápido Central",
+  "short_name": "Stock",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#28a745",
+  "description": "Herramienta de control de stock y vitrinas",
+  "icons": [
+    {
+      "src": "/static/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

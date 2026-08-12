@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Central</title>
+    
+    <!-- Configuración de PWA (Web App) -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#28a745">
+    <link rel="apple-touch-icon" href="/static/icon-192x192.png">
+
+    <style>
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
+            padding: 20px; 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background-color: #f8f9fa;
+        }
+        h2 { color: #343a40; text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057;}
+        input[type="number"], select { 
+            width: 100%; 
+            padding: 12px; 
+            box-sizing: border-box; 
+            border-radius: 8px; 
+            border: 1px solid #ced4da;
+            font-size: 16px;
+        }
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 8px;
+            border: 1px dashed #adb5bd;
+        }
+        button { 
+            width: 100%; 
+            padding: 15px; 
+            background-color: #28a745; 
+            color: white; 
+            border: none; 
+            font-size: 18px; 
+            font-weight: bold; 
+            border-radius: 8px; 
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        #resultado { 
+            margin-top: 25px; 
+            padding: 20px; 
+            background-color: #d4edda; 
+            color: #155724; 
+            border-radius: 8px; 
+            text-align: center; 
+            font-size: 22px; 
+            font-weight: bold; 
+            display: none; 
+            border: 1px solid #c3e6cb;
+        }
+        .detalles-resultado {
+            font-size: 14px;
+            font-weight: normal;
+            color: #495057;
+            display: block;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Control Rápido de Stock</h2>
+    <form id="inventarioForm">
+        <div class="form-group">
+            <label>Tipo de Producto:</label>
+            <select name="sabor" id="sabor">
+                <option value="Empanada">Empanadas (Cajones x30)</option>
+                <option value="Burrito">Burritos (Cajones x14)</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label>📦 Cajones COMPLETOS (Cámara):</label>
+            <input type="number" name="cajones" value="0" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label>🧊 Bandejas COMPLETAS (Heladera):</label>
+            <input type="number" name="bandejas" value="0" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label>⏳ Unidades Sueltas (Área de Espera):</label>
+            <input type="number" name="espera" value="0" min="0">
+        </div>
+        
+        <div class="form-group">
+            <label>📷 Foto de INCOMPLETOS (Vitrina / Cajón):</label>
+            <input type="file" name="foto" accept="image/*" capture="environment">
+        </div>
+        
+        <button type="submit" id="btnCalcular">Calcular Total</button>
+    </form>
+    
+    <div id="resultado"></div>
+
+    <script>
+        document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('btnCalcular');
+            const divResultado = document.getElementById('resultado');
+            
+            btn.innerText = 'Analizando imagen y calculando...';
+            btn.disabled = true;
+            divResultado.style.display = 'none';
+
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/calcular', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                divResultado.style.display = 'block';
+                divResultado.innerHTML = `
+                    Total en Stock: ${data.total}
+                    <span class="detalles-resultado">
+                        (Completos + Espera: ${data.manual} | IA contó en foto: ${data.ia})
+                    </span>`;
+            } catch (error) {
+                alert('Ocurrió un error al procesar los datos o la imagen.');
+            } finally {
+                btn.innerText = 'Calcular Total';
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
