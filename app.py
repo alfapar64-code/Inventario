@@ -13,10 +13,10 @@ app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
-    modelo = 'gemini-1.5-flash'
+    # Usamos v1beta que es la ruta correcta para gemini-1.5
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
-    url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
     
     payload = {
         "contents": [{
@@ -27,23 +27,16 @@ def llamar_google_directo(prompt, img_bytes):
         }]
     }
     
+    data_bytes = json.dumps(payload).encode('utf-8')
+    req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+    
     try:
-        data_bytes = json.dumps(payload).encode('utf-8')
-        req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
-        
         with urllib.request.urlopen(req) as response:
             res_data = json.loads(response.read().decode('utf-8'))
             return res_data['candidates'][0]['content']['parts'][0]['text']
-            
     except urllib.error.HTTPError as e:
-        err_msg = e.read().decode('utf-8')
-        try:
-            error_real = json.loads(err_msg)['error']['message']
-        except:
-            error_real = str(e)
-        raise Exception(f"Google dice: {error_real}")
-    except Exception as e:
-        raise Exception(f"Error de conexión: {str(e)}")
+        error_msg = e.read().decode('utf-8')
+        raise Exception(f"Error de Google: {error_msg}")
 
 @app.route('/')
 def index():
@@ -72,7 +65,6 @@ def calcular():
                 "Devuelve SOLO un JSON válido. Ejemplo: {\"JQ\": 5, \"HM\": 2, \"CQ\": 0, ...}."
                 "Suma carril 1 y 12 en JQ."
             )
-            
             texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
             texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
             datos = json.loads(texto_limpio)
@@ -86,7 +78,6 @@ def calcular():
             total_manual = (cajones * (14 if 'Burrito' in sabor else 30)) + (bandejas * 40) + espera
             
             prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
-            
             texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
             texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
             
@@ -99,7 +90,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': f'{str(e)}'})
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
