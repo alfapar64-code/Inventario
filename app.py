@@ -11,7 +11,9 @@ app = Flask(__name__)
 
 api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
-model = genai.GenerativeModel('gemini-1.5-flash')
+
+# AQUÍ ESTÁ LA CORRECCIÓN: Le agregamos "-latest" al nombre del modelo
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 @app.route('/')
 def index():
@@ -55,7 +57,6 @@ def calcular():
             
             if foto and foto.filename != '':
                 image = preparar_imagen(foto)
-                # Instrucción estricta para forzar un JSON
                 prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
                 response = model.generate_content([prompt, image])
                 texto = response.text.strip().replace('```json', '').replace('```', '')
