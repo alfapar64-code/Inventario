@@ -4,142 +4,193 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Central</title>
-    
-    <!-- Configuración de PWA (Web App) -->
     <link rel="manifest" href="/static/manifest.json">
     <meta name="theme-color" content="#28a745">
     <link rel="apple-touch-icon" href="/static/icon-192x192.png">
 
     <style>
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; 
-            padding: 20px; 
-            max-width: 500px; 
-            margin: 0 auto; 
-            background-color: #f8f9fa;
-        }
-        h2 { color: #343a40; text-align: center; margin-bottom: 25px; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #495057;}
-        input[type="number"], select { 
-            width: 100%; 
-            padding: 12px; 
-            box-sizing: border-box; 
-            border-radius: 8px; 
-            border: 1px solid #ced4da;
-            font-size: 16px;
-        }
-        input[type="file"] {
-            width: 100%;
-            padding: 10px;
-            background: #e9ecef;
-            border-radius: 8px;
-            border: 1px dashed #adb5bd;
-        }
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            background-color: #28a745; 
-            color: white; 
-            border: none; 
-            font-size: 18px; 
-            font-weight: bold; 
-            border-radius: 8px; 
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
+        body { font-family: -apple-system, Arial, sans-serif; padding: 15px; max-width: 500px; margin: 0 auto; background-color: #f8f9fa;}
+        h2 { color: #343a40; text-align: center; margin-bottom: 20px; font-size: 22px;}
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #495057; font-size: 14px;}
+        input[type="number"], select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ced4da; font-size: 16px;}
+        input[type="file"] { width: 100%; padding: 8px; background: #e9ecef; border-radius: 8px; border: 1px dashed #adb5bd; font-size: 14px;}
+        button { width: 100%; padding: 14px; background-color: #28a745; color: white; border: none; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s;}
         button:hover { background-color: #218838; }
-        button:disabled { background-color: #6c757d; cursor: not-allowed; }
-        #resultado { 
-            margin-top: 25px; 
-            padding: 20px; 
-            background-color: #d4edda; 
-            color: #155724; 
-            border-radius: 8px; 
-            text-align: center; 
-            font-size: 22px; 
-            font-weight: bold; 
-            display: none; 
-            border: 1px solid #c3e6cb;
-        }
-        .detalles-resultado {
-            font-size: 14px;
-            font-weight: normal;
-            color: #495057;
-            display: block;
-            margin-top: 8px;
-        }
+        button:disabled { background-color: #6c757d; }
+        .btn-limpiar { background-color: #dc3545; margin-top: 15px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px;}
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #f1f3f5; color: #495057; font-weight: bold;}
+        .total-cell { font-weight: bold; color: #28a745; font-size: 16px;}
     </style>
 </head>
 <body>
-    <h2>Control Rápido de Stock</h2>
-    <form id="inventarioForm">
-        <div class="form-group">
-            <label>Tipo de Producto:</label>
-            <select name="sabor" id="sabor">
-                <option value="Empanada">Empanadas (Cajones x30)</option>
-                <option value="Burrito">Burritos (Cajones x14)</option>
-            </select>
-        </div>
-        
-        <div class="form-group">
-            <label>📦 Cajones COMPLETOS (Cámara):</label>
-            <input type="number" name="cajones" value="0" min="0">
-        </div>
-        
-        <div class="form-group">
-            <label>🧊 Bandejas COMPLETAS (Heladera):</label>
-            <input type="number" name="bandejas" value="0" min="0">
-        </div>
-        
-        <div class="form-group">
-            <label>⏳ Unidades Sueltas (Área de Espera):</label>
-            <input type="number" name="espera" value="0" min="0">
-        </div>
-        
-        <div class="form-group">
-            <label>📷 Foto de INCOMPLETOS (Vitrina / Cajón):</label>
-            <input type="file" name="foto" accept="image/*" capture="environment">
-        </div>
-        
-        <button type="submit" id="btnCalcular">Calcular Total</button>
-    </form>
+    <h2>📋 Inventario Rápido</h2>
     
-    <div id="resultado"></div>
+    <div class="card">
+        <form id="inventarioForm">
+            <div class="form-group">
+                <label>Seleccionar Variedad u Operación:</label>
+                <select name="sabor" id="sabor" onchange="toggleInputs()">
+                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto Mostrador)</option>
+                    <optgroup label="Tradicionales">
+                        <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
+                        <option value="Humita (HM)">Humita (HM)</option>
+                        <option value="Cebolla y Queso (CQ)">Cebolla y Queso (CQ)</option>
+                        <option value="Capresse (CA)">Capresse (CA)</option>
+                        <option value="Roquefort y Jamón (RJ)">Roquefort y Jamón (RJ)</option>
+                        <option value="Bondiola (BD)">Bondiola (BD)</option>
+                        <option value="Carne Picante (CP)">Carne Picante (CP)</option>
+                        <option value="Pollo (PL)">Pollo (PL)</option>
+                        <option value="Cheese Burger (CB)">Cheese Burger (CB)</option>
+                        <option value="Carne Cuchillo (CC)">Carne Cuchillo (CC)</option>
+                        <option value="Carne Suave (CS)">Carne Suave (CS)</option>
+                    </optgroup>
+                    <optgroup label="Veganas / Integrales">
+                        <option value="Verdura">Verdura</option>
+                        <option value="Puerro y Hongos">Puerro y Hongos</option>
+                        <option value="Choclo y Calabaza">Choclo y Calabaza</option>
+                        <option value="Pollo al Curry">Pollo al Curry</option>
+                        <option value="Carne Criolla">Carne Criolla</option>
+                    </optgroup>
+                    <optgroup label="Burritos">
+                        <option value="Burrito de Ternera">Burrito de Ternera (Cajón x14)</option>
+                    </optgroup>
+                </select>
+            </div>
+            
+            <div id="manualInputs" style="display: none;">
+                <div class="form-group">
+                    <label>📦 Cajones COMPLETOS:</label>
+                    <input type="number" name="cajones" id="cajones" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>🧊 Bandejas COMPLETAS (Heladera):</label>
+                    <input type="number" name="bandejas" id="bandejas" value="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>⏳ Área de Espera (Sueltas):</label>
+                    <input type="number" name="espera" id="espera" value="0" min="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label id="fotoLabel">📷 Subir Foto de la Vitrina (12 carriles):</label>
+                <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
+            </div>
+            
+            <button type="submit" id="btnCalcular">➕ Sumar al Inventario</button>
+        </form>
+    </div>
+
+    <div class="card" id="resumenCard">
+        <h3 style="margin-top: 0; color: #343a40; text-align: center;">Resumen Acumulado</h3>
+        <table id="tablaResultados">
+            <thead>
+                <tr>
+                    <th>Sabor</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="tablaBody">
+                <!-- Filas dinámicas -->
+            </tbody>
+        </table>
+        <button class="btn-limpiar" onclick="limpiarInventario()">🗑️ Borrar Todo y Empezar de Cero</button>
+    </div>
 
     <script>
+        // Diccionario para almacenar todo el conteo
+        let inventario = {};
+
+        // Mapeo para conectar las siglas de la IA con el nombre completo
+        const mapaMostrador = {
+            "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
+            "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
+            "CP": "Carne Picante (CP)", "PL": "Pollo (PL)", "CB": "Cheese Burger (CB)", 
+            "CC": "Carne Cuchillo (CC)", "CS": "Carne Suave (CS)"
+        };
+
+        function toggleInputs() {
+            const sabor = document.getElementById('sabor').value;
+            const manualInputs = document.getElementById('manualInputs');
+            const fotoLabel = document.getElementById('fotoLabel');
+            
+            if (sabor === 'MOSTRADOR_COMPLETO') {
+                manualInputs.style.display = 'none';
+                fotoLabel.innerText = '📷 Subir Foto de la Vitrina (12 carriles):';
+            } else {
+                manualInputs.style.display = 'block';
+                fotoLabel.innerText = '📷 Foto de INCOMPLETOS (Cajón / Bandeja):';
+            }
+        }
+
+        function actualizarTabla() {
+            const tbody = document.getElementById('tablaBody');
+            tbody.innerHTML = '';
+            
+            for (const [sabor, cantidad] of Object.entries(inventario)) {
+                if (cantidad > 0) {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${sabor}</td><td class="total-cell">${cantidad}</td>`;
+                    tbody.appendChild(tr);
+                }
+            }
+        }
+
+        function limpiarInventario() {
+            if(confirm("¿Seguro que quieres limpiar todo el conteo actual?")) {
+                inventario = {};
+                actualizarTabla();
+            }
+        }
+
         document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnCalcular');
-            const divResultado = document.getElementById('resultado');
-            
-            btn.innerText = 'Analizando imagen y calculando...';
+            btn.innerText = 'Procesando...';
             btn.disabled = true;
-            divResultado.style.display = 'none';
 
             const formData = new FormData(e.target);
 
             try {
-                const response = await fetch('/calcular', {
-                    method: 'POST',
-                    body: formData
-                });
-                
+                const response = await fetch('/calcular', { method: 'POST', body: formData });
                 const data = await response.json();
                 
-                divResultado.style.display = 'block';
-                divResultado.innerHTML = `
-                    Total en Stock: ${data.total}
-                    <span class="detalles-resultado">
-                        (Completos + Espera: ${data.manual} | IA contó en foto: ${data.ia})
-                    </span>`;
+                if (data.error) {
+                    alert(data.error);
+                } else if (data.tipo === 'mostrador') {
+                    // Sumar los resultados del mostrador a la tabla
+                    for (const [sigla, cant] of Object.entries(data.datos)) {
+                        const nombreCompleto = mapaMostrador[sigla] || sigla;
+                        inventario[nombreCompleto] = (inventario[nombreCompleto] || 0) + parseInt(cant);
+                    }
+                } else if (data.tipo === 'individual') {
+                    // Sumar carga manual o foto individual
+                    inventario[data.sabor] = (inventario[data.sabor] || 0) + parseInt(data.total);
+                }
+                
+                actualizarTabla();
+                
+                // Resetear el formulario (deja el sabor seleccionado pero borra números y foto)
+                document.getElementById('cajones').value = 0;
+                document.getElementById('bandejas').value = 0;
+                document.getElementById('espera').value = 0;
+                document.getElementById('foto').value = "";
+
             } catch (error) {
                 alert('Ocurrió un error al procesar los datos o la imagen.');
             } finally {
-                btn.innerText = 'Calcular Total';
+                btn.innerText = '➕ Sumar al Inventario';
                 btn.disabled = false;
             }
         });
+
+        // Ejecutar estado inicial de la vista
+        toggleInputs();
     </script>
 </body>
 </html>
