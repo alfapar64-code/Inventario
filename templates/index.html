@@ -4,249 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Central</title>
-    <link rel="manifest" href="/static/manifest.json">
-    <meta name="theme-color" content="#ff6b6b">
-    <link rel="apple-touch-icon" href="/static/icon-192x192.png">
-
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-            padding: 15px; 
-            max-width: 500px; 
-            margin: 0 auto; 
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            min-height: 100vh;
+            font-family: sans-serif; padding: 15px; margin: 0 auto; max-width: 500px;
+            background-color: #fdfaf6; /* Fondo Crema Calido */
         }
-        h2 { 
-            color: #212529; 
-            text-align: center; 
-            margin-bottom: 20px; 
-            font-size: 24px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-        .card { 
-            background: #ffffff; 
-            padding: 22px; 
-            border-radius: 16px; 
-            box-shadow: 0 8px 20px rgba(0,0,0,0.06); 
-            margin-bottom: 20px; 
-            border: 1px solid rgba(0,0,0,0.04);
-        }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 6px; font-weight: 600; color: #495057; font-size: 14px;}
-        input[type="number"], select { 
-            width: 100%; 
-            padding: 12px; 
-            border-radius: 10px; 
-            border: 1.5px solid #ced4da; 
-            font-size: 16px;
-            background-color: #fdfdfe;
-            transition: border-color 0.2s;
-        }
-        input[type="number"]:focus, select:focus {
-            border-color: #ff6b6b;
-            outline: none;
-        }
-        input[type="file"] { 
-            width: 100%; 
-            padding: 10px; 
-            background: #f1f3f5; 
-            border-radius: 10px; 
-            border: 1.5px dashed #adb5bd; 
-            font-size: 14px;
-        }
-        button { 
-            width: 100%; 
-            padding: 15px; 
-            background: linear-gradient(135deg, #28a745 0%, #218838 100%);
-            color: white; 
-            border: none; 
-            font-size: 16px; 
-            font-weight: bold; 
-            border-radius: 10px; 
-            cursor: pointer; 
-            box-shadow: 0 4px 10px rgba(40, 167, 69, 0.3);
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-        button:active { transform: scale(0.98); }
-        button:disabled { background: #6c757d; box-shadow: none; }
-        
-        .btn-limpiar { 
-            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            margin-top: 15px; 
-            box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
-        }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 15px;}
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #e9ecef; }
-        th { background-color: #f8f9fa; color: #495057; font-weight: bold; border-top-left-radius: 6px; border-top-right-radius: 6px;}
-        .total-cell { font-weight: bold; color: #28a745; font-size: 17px;}
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        select, input { width: 100%; padding: 12px; margin-top: 5px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;}
+        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;}
+        .btn-limpiar { background: #dc3545; margin-top: 10px; }
+        .file-box { background: #f1f3f5; padding: 10px; border-radius: 8px; margin: 10px 0; border: 1px dashed #999; }
     </style>
 </head>
 <body>
-    <h2>📋 Inventario Rápido</h2>
-    
+    <h2 style="text-align:center;">📋 Inventario Rápido</h2>
     <div class="card">
         <form id="inventarioForm">
-            <div class="form-group">
-                <label>Seleccionar Variedad u Operación:</label>
-                <select name="sabor" id="sabor" onchange="toggleInputs()">
-                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto Mostrador)</option>
-                    <optgroup label="Tradicionales">
-                        <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
-                        <option value="Humita (HM)">Humita (HM)</option>
-                        <option value="Cebolla y Queso (CQ)">Cebolla y Queso (CQ)</option>
-                        <option value="Capresse (CA)">Capresse (CA)</option>
-                        <option value="Roquefort y Jamón (RJ)">Roquefort y Jamón (RJ)</option>
-                        <option value="Bondiola (BD)">Bondiola (BD)</option>
-                        <option value="Carne Picante (CP)">Carne Picante (CP)</option>
-                        <option value="Pollo (PL)">Pollo (PL)</option>
-                        <option value="Cheese Burger (CB)">Cheese Burger (CB)</option>
-                        <option value="Carne Cuchillo (CC)">Carne Cuchillo (CC)</option>
-                        <option value="Carne Suave (CS)">Carne Suave (CS)</option>
-                    </optgroup>
-                    <optgroup label="Veganas / Integrales">
-                        <option value="Verdura">Verdura</option>
-                        <option value="Puerro y Hongos">Puerro y Hongos</option>
-                        <option value="Choclo y Calabaza">Choclo y Calabaza</option>
-                        <option value="Pollo al Curry">Pollo al Curry</option>
-                        <option value="Carne Criolla">Carne Criolla</option>
-                    </optgroup>
-                    <optgroup label="Burritos">
-                        <option value="Burrito de Ternera">Burrito de Ternera (Cajón x14)</option>
-                    </optgroup>
-                </select>
-            </div>
+            <label>Sabor:</label>
+            <select name="sabor" id="sabor" onchange="toggleInputs()">
+                <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA</option>
+                <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
+                <option value="Humita (HM)">Humita (HM)</option>
+                <!-- Agrega resto de sabores -->
+            </select>
             
-            <div id="manualInputs" style="display: none;">
-                <div class="form-group">
-                    <label>📦 Cajones COMPLETOS:</label>
-                    <input type="number" name="cajones" id="cajones" value="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>🧊 Bandejas COMPLETAS (Heladera):</label>
-                    <input type="number" name="bandejas" id="bandejas" value="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>⏳ Área de Espera (Sueltas):</label>
-                    <input type="number" name="espera" id="espera" value="0" min="0">
-                </div>
+            <div id="manualInputs" style="display:none;">
+                <label>Cajones:</label><input type="number" name="cajones" value="0">
+                <label>Bandejas:</label><input type="number" name="bandejas" value="0">
             </div>
-            
-            <div class="form-group">
-                <label id="fotoLabel">📷 Subir Foto de la Vitrina (12 carriles):</label>
-                <input type="file" name="foto" id="foto" accept="image/*">
+
+            <div class="file-box">
+                <label>📷 BOTÓN CÁMARA (Directo):</label>
+                <input type="file" name="foto" accept="image/*" capture="environment">
             </div>
-            
+            <div class="file-box">
+                <label>🖼️ BOTÓN GALERÍA:</label>
+                <input type="file" name="foto_galeria" accept="image/*">
+            </div>
             <button type="submit" id="btnCalcular">➕ Sumar al Inventario</button>
         </form>
     </div>
-
-    <div class="card" id="resumenCard">
-        <h3 style="margin-top: 0; color: #343a40; text-align: center; font-size: 18px;">Resumen Acumulado</h3>
-        <table id="tablaResultados">
-            <thead>
-                <tr>
-                    <th>Sabor</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="tablaBody">
-                <!-- Filas dinámicas -->
-            </tbody>
-        </table>
-        <button class="btn-limpiar" onclick="limpiarInventario()">🗑️ Borrar Todo y Empezar de Cero</button>
+    <div class="card">
+        <h3>Resumen</h3>
+        <table id="tabla" width="100%"><thead><tr><th>Sabor</th><th>Total</th></tr></thead><tbody id="tablaBody"></tbody></table>
+        <button class="btn-limpiar" onclick="limpiar()">🗑️ Borrar</button>
     </div>
-
     <script>
-        let inventario = {};
-
-        const mapaMostrador = {
-            "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
-            "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
-            "CP": "Carne Picante (CP)", "PL": "Pollo (PL)", "CB": "Cheese Burger (CB)", 
-            "CC": "Carne Cuchillo (CC)", "CS": "Carne Suave (CS)"
-        };
-
         function toggleInputs() {
-            const sabor = document.getElementById('sabor').value;
-            const manualInputs = document.getElementById('manualInputs');
-            const fotoLabel = document.getElementById('fotoLabel');
-            
-            if (sabor === 'MOSTRADOR_COMPLETO') {
-                manualInputs.style.display = 'none';
-                fotoLabel.innerText = '📷 Subir Foto de la Vitrina (12 carriles):';
-            } else {
-                manualInputs.style.display = 'block';
-                fotoLabel.innerText = '📷 Foto de INCOMPLETOS (Cajón / Bandeja):';
-            }
+            document.getElementById('manualInputs').style.display = (document.getElementById('sabor').value === 'MOSTRADOR_COMPLETO') ? 'none' : 'block';
         }
-
-        function actualizarTabla() {
-            const tbody = document.getElementById('tablaBody');
-            tbody.innerHTML = '';
-            
-            let hayDatos = false;
-            for (const [sabor, cantidad] of Object.entries(inventario)) {
-                if (cantidad > 0) {
-                    hayDatos = true;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${sabor}</td><td class="total-cell">${cantidad}</td>`;
-                    tbody.appendChild(tr);
-                }
-            }
-            if (!hayDatos) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #adb5bd; padding: 15px;">Sin registros aún</td></tr>`;
-            }
-        }
-
-        function limpiarInventario() {
-            if(confirm("¿Seguro que quieres limpiar todo el conteo actual?")) {
-                inventario = {};
-                actualizarTabla();
-            }
-        }
-
+        function limpiar() { location.reload(); }
         document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnCalcular');
             btn.innerText = 'Procesando...';
-            btn.disabled = true;
-
             const formData = new FormData(e.target);
-
-            try {
-                const response = await fetch('/calcular', { method: 'POST', body: formData });
-                const data = await response.json();
-                
-                if (data.error) {
-                    alert(data.error);
-                } else if (data.tipo === 'mostrador') {
-                    for (const [sigla, cant] of Object.entries(data.datos)) {
-                        const nombreCompleto = mapaMostrador[sigla] || sigla;
-                        inventario[nombreCompleto] = (inventario[nombreCompleto] || 0) + parseInt(cant);
-                    }
-                } else if (data.tipo === 'individual') {
-                    inventario[data.sabor] = (inventario[data.sabor] || 0) + parseInt(data.total);
-                }
-                
-                actualizarTabla();
-                
-                document.getElementById('cajones').value = 0;
-                document.getElementById('bandejas').value = 0;
-                document.getElementById('espera').value = 0;
-                document.getElementById('foto').value = "";
-
-            } catch (error) {
-                alert('Ocurrió un error al procesar los datos o la imagen.');
-            } finally {
-                btn.innerText = '➕ Sumar al Inventario';
-                btn.disabled = false;
-            }
+            const res = await fetch('/calcular', { method: 'POST', body: formData });
+            const data = await res.json();
+            if(data.error) alert(data.error);
+            else location.reload(); // Recarga simple para mostrar cambios
         });
-
-        toggleInputs();
-        actualizarTabla();
     </script>
 </body>
 </html>
