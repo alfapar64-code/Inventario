@@ -1,19 +1,62 @@
 from flask import Flask, request, jsonify, render_template
-import google.generativeai as genai
 from PIL import Image
 import io
 import json
 import os
+import base64
+import urllib.request
+import urllib.error
 from pillow_heif import register_heif_opener
 
 register_heif_opener()
 app = Flask(__name__)
 
-api_key_segura = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=api_key_segura)
-
-# Usamos DIRECTAMENTE el modelo rápido y moderno. Sin listas raras.
-model = genai.GenerativeModel('gemini-1.5-flash')
+# FUNCIÓN NUCLEAR: Habla directo con Google sin usar su librería problemática
+def llamar_google_directo(prompt, img_bytes):
+    api_key = os.environ.get("GEMINI_API_KEY")
+    img_b64 = base64.b64encode(img_bytes).decode("utf-8")
+    
+    # Lista de todos los modelos, del más nuevo al más viejo
+    modelos = [
+        'gemini-1.5-flash',
+        'gemini-1.5-pro',
+        'gemini-1.0-pro-vision-latest',
+        'gemini-pro-vision'
+    ]
+    
+    ultimo_error = ""
+    
+    for modelo in modelos:
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+            payload = {
+                "contents": [{
+                    "parts": [
+                        {"text": prompt},
+                        {"inline_data": {"mime_type": "image/jpeg", "data": img_b64}}
+                    ]
+                }]
+            }
+            data_bytes = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
+            
+            with urllib.request.urlopen(req) as response:
+                res_data = json.loads(response.read().decode('utf-8'))
+                # Si Google responde bien, extrae el texto y termina
+                return res_data['candidates'][0]['content']['parts'][0]['text']
+                
+        except urllib.error.HTTPError as e:
+            err_msg = e.read().decode('utf-8')
+            try:
+                ultimo_error = json.loads(err_msg)['error']['message']
+            except:
+                ultimo_error = str(e)
+            continue # Falla este modelo, intenta rápido con el siguiente
+        except Exception as e:
+            ultimo_error = str(e)
+            continue
+            
+    raise Exception(f"Ningún modelo aceptó la llave. Último mensaje de Google: {ultimo_error}")
 
 @app.route('/')
 def index():
@@ -24,15 +67,18 @@ def calcular():
     sabor = request.form.get('sabor')
     foto = request.files.get('foto') or request.files.get('foto_galeria')
 
-    try:
-        if not foto or foto.filename == '':
-            return jsonify({'error': 'Falta la foto'})
+    if not foto or foto.filename == '':
+        return jsonify({'error': 'Falta la foto'})
 
-        # Leemos la imagen directamente con Pillow
+    try:
+        # Convertimos la foto a un JPEG seguro en memoria
         img = Image.open(io.BytesIO(foto.read()))
         if img.mode != "RGB":
             img = img.convert("RGB")
         img.thumbnail((800, 800))
+        buffer = io.BytesIO()
+        img.save(buffer, format="JPEG")
+        img_bytes_seguros = buffer.getvalue()
 
         if sabor == 'MOSTRADOR_COMPLETO':
             prompt = (
@@ -41,10 +87,9 @@ def calcular():
                 "Suma carril 1 y 12 en JQ."
             )
             
-            # Se la enviamos limpia a Gemini
-            response = model.generate_content([prompt, img])
-            texto = response.text.strip().replace('```json', '').replace('```', '')
-            datos = json.loads(texto)
+            texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
+            texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
+            datos = json.loads(texto_limpio)
             return jsonify({'tipo': 'mostrador', 'datos': datos})
 
         else:
@@ -56,12 +101,11 @@ def calcular():
             
             prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
             
-            # Se la enviamos limpia a Gemini
-            response = model.generate_content([prompt, img])
-            texto = response.text.strip().replace('```json', '').replace('```', '')
+            texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
+            texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
             
             try:
-                data = json.loads(texto)
+                data = json.loads(texto_limpio)
                 total_ia = int(data.get('cantidad', 0))
             except:
                 total_ia = 0
@@ -69,7 +113,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        return jsonify({'error': f'Error de Google: {str(e)}'})
+        return jsonify({'error': f'Error de conexión directa: {str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
