@@ -12,8 +12,8 @@ app = Flask(__name__)
 api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
 
-# AQUÍ ESTÁ LA CORRECCIÓN: Le agregamos "-latest" al nombre del modelo
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+# CAMBIO DEFINITIVO: Usaremos la versión "Pro" que es universal y más potente
+model = genai.GenerativeModel('gemini-1.5-pro')
 
 @app.route('/')
 def index():
@@ -28,6 +28,7 @@ def calcular():
         img = Image.open(io.BytesIO(archivo_foto.read()))
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
+        # Reducimos un poco el tamaño para que sea ultra rápido
         img.thumbnail((800, 800)) 
         return img
 
