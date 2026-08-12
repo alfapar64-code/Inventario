@@ -14,9 +14,9 @@ app = Flask(__name__)
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
     
-    # SUSTITUCIÓN CRUCIAL: Usamos el modelo validado en tu lista
-    modelo = 'gemini-2.5-flash'
-    url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
+    # LA LLAVE MAESTRA: Usamos el comodín universal que detectamos en tu lista
+    modelo = 'gemini-flash-latest'
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
     
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     payload = {
@@ -31,9 +31,15 @@ def llamar_google_directo(prompt, img_bytes):
     data_bytes = json.dumps(payload).encode('utf-8')
     req = urllib.request.Request(url, data=data_bytes, headers={'Content-Type': 'application/json'})
     
-    with urllib.request.urlopen(req) as response:
-        res_data = json.loads(response.read().decode('utf-8'))
-        return res_data['candidates'][0]['content']['parts'][0]['text']
+    try:
+        with urllib.request.urlopen(req) as response:
+            res_data = json.loads(response.read().decode('utf-8'))
+            return res_data['candidates'][0]['content']['parts'][0]['text']
+    except urllib.error.HTTPError as e:
+        error_msg = e.read().decode('utf-8')
+        raise Exception(f"Google dice: {error_msg}")
+    except Exception as e:
+        raise Exception(f"Error de conexión: {str(e)}")
 
 @app.route('/')
 def index():
@@ -87,11 +93,7 @@ def calcular():
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
             
     except Exception as e:
-        # Incluimos el rastreo de errores detallado por si acaso
-        error_msg = str(e)
-        if hasattr(e, 'read'):
-            error_msg += f" - Google detallado: {e.read().decode('utf-8')}"
-        return jsonify({'error': error_msg})
+        return jsonify({'error': str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
