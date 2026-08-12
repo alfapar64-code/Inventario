@@ -26,12 +26,14 @@ def calcular():
     sabor = request.form.get('sabor')
     foto = request.files.get('foto')
 
-    # Función auxiliar para limpiar y normalizar cualquier formato de imagen (.heic, .png, etc.)
+    # Función para optimizar y reducir la imagen (evita que se sature la memoria de Render)
     def preparar_imagen(archivo_foto):
         img = Image.open(io.BytesIO(archivo_foto.read()))
-        # Convertir a RGB estándar (elimina problemas de transparencia o perfiles HEIC incompatibles)
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
+        
+        # Redimensionar manteniendo la proporción para que pese muy poco en la memoria (máximo 1024px)
+        img.thumbnail((1024, 1024))
         return img
 
     # LÓGICA 1: MOSTRADOR COMPLETO (1 Foto -> 12 Carriles)
