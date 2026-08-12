@@ -15,11 +15,11 @@ def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
     img_b64 = base64.b64encode(img_bytes).decode("utf-8")
     
-    # Usamos únicamente gemini-1.5-flash para ir a tiro fijo
     modelo = 'gemini-1.5-flash'
     
     try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
+        # CAMBIO CLAVE: Usamos 'v1' en lugar de 'v1beta' que exigía tu nueva llave
+        url = f"https://generativelanguage.googleapis.com/v1/models/{modelo}:generateContent?key={api_key}"
         payload = {
             "contents": [{
                 "parts": [
