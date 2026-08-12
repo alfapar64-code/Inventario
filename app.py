@@ -12,8 +12,28 @@ app = Flask(__name__)
 api_key_segura = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=api_key_segura)
 
-# CAMBIO DEFINITIVO: Usaremos la versión "Pro" que es universal y más potente
-model = genai.GenerativeModel('gemini-1.5-pro')
+# FUNCIÓN PILOTO AUTOMÁTICO: Busca el modelo que esté disponible en tu Llave
+def analizar_con_ia(prompt, image):
+    modelos_respaldo = [
+        'gemini-1.5-flash', 
+        'gemini-1.5-pro', 
+        'gemini-1.5-flash-002', 
+        'gemini-1.0-pro-vision-latest', 
+        'gemini-pro-vision'
+    ]
+    
+    ultimo_error = None
+    for nombre in modelos_respaldo:
+        try:
+            print(f"Intentando usar el modelo: {nombre}...")
+            modelo_temporal = genai.GenerativeModel(nombre)
+            respuesta = modelo_temporal.generate_content([prompt, image])
+            return respuesta # ¡Si funciona, devuelve la respuesta y sale!
+        except Exception as e:
+            ultimo_error = str(e)
+            continue # Si falla, intenta automáticamente con el siguiente
+            
+    raise Exception(f"Ningún modelo quiso funcionar. Verifica la foto o intenta de nuevo.")
 
 @app.route('/')
 def index():
@@ -28,7 +48,6 @@ def calcular():
         img = Image.open(io.BytesIO(archivo_foto.read()))
         if img.mode in ("RGBA", "P", "CMYK"):
             img = img.convert("RGB")
-        # Reducimos un poco el tamaño para que sea ultra rápido
         img.thumbnail((800, 800)) 
         return img
 
@@ -43,7 +62,8 @@ def calcular():
                 "Devuelve SOLO un JSON válido. Ejemplo: {\"JQ\": 5, \"HM\": 2, \"CQ\": 0, ...}."
                 "Suma carril 1 y 12 en JQ."
             )
-            response = model.generate_content([prompt, image])
+            
+            response = analizar_con_ia(prompt, image)
             texto = response.text.strip().replace('```json', '').replace('```', '')
             datos = json.loads(texto)
             return jsonify({'tipo': 'mostrador', 'datos': datos})
@@ -59,7 +79,8 @@ def calcular():
             if foto and foto.filename != '':
                 image = preparar_imagen(foto)
                 prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
-                response = model.generate_content([prompt, image])
+                
+                response = analizar_con_ia(prompt, image)
                 texto = response.text.strip().replace('```json', '').replace('```', '')
                 try:
                     data = json.loads(texto)
@@ -68,8 +89,9 @@ def calcular():
                     total_ia = 0
                     
             return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
+            
     except Exception as e:
-        return jsonify({'error': f'Error procesando foto: {str(e)}'})
+        return jsonify({'error': f'Error de IA: {str(e)}'})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
