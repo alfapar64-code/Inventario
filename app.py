@@ -23,16 +23,14 @@ def index():
 @app.route('/calcular', methods=['POST'])
 def calcular():
     sabor = request.form.get('sabor')
-    # Intentar obtener foto de cámara o de galería
     foto = request.files.get('foto') or request.files.get('foto_galeria')
 
     def preparar_imagen(archivo_foto):
         try:
-            # Abrir archivo y convertir a RGB
-            img = Image.open(archivo_foto)
+            # Usar io.BytesIO para que Pillow lea correctamente el archivo subido desde Flask
+            img = Image.open(io.BytesIO(archivo_foto.read()))
             if img.mode in ("RGBA", "P", "CMYK"):
                 img = img.convert("RGB")
-            # Reducir tamaño drásticamente para ahorrar RAM y evitar error de Render
             img.thumbnail((800, 800)) 
             return img
         except Exception as e:
@@ -47,8 +45,8 @@ def calcular():
             image = preparar_imagen(foto)
             prompt = (
                 "Analiza esta vitrina. Carriles: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
-                "Devuelve SOLO un JSON con las iniciales (JQ, HM, etc.) y conteo. Suma carril 1 y 12 en 'JQ'. "
-                "Ejemplo: {\"JQ\": 5, \"HM\": 2}"
+                "Devuelve SOLO un objeto JSON válido con las iniciales (JQ, HM, etc.) y conteo de unidades. Suma carril 1 y 12 en 'JQ'. "
+                "Ejemplo: {\"JQ\": 5, \"HM\": 2, \"CQ\": 1, \"CA\": 1, \"RJ\": 2, \"BD\": 2, \"CP\": 4, \"PL\": 6, \"CB\": 7, \"CC\": 4, \"CS\": 6}"
             )
             response = model.generate_content([prompt, image])
             texto = response.text.strip().strip('```json').strip('```')
@@ -56,7 +54,7 @@ def calcular():
             return jsonify({'tipo': 'mostrador', 'datos': datos_mostrador})
         except Exception as e:
             print(f"Error procesando vitrina: {e}")
-            return jsonify({'error': 'No pude leer la foto. Prueba con una luz más uniforme.'})
+            return jsonify({'error': 'No pude leer la foto. Asegúrate de que sea clara.'})
 
     else:
         cajones = int(request.form.get('cajones', 0) or 0)
@@ -73,7 +71,8 @@ def calcular():
                 prompt = f"Cuenta solo la cantidad exacta de unidades de {sabor} en la imagen. Responde solo el número."
                 response = model.generate_content([prompt, image])
                 total_ia = int(''.join(filter(str.isdigit, response.text)))
-            except:
+            except Exception as e:
+                print(f"Error en conteo individual: {e}")
                 total_ia = 0
                 
         return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
