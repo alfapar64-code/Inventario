@@ -11,7 +11,6 @@ from pillow_heif import register_heif_opener
 register_heif_opener()
 app = Flask(__name__)
 
-# Modificamos la función para que acepte tanto imágenes como audios
 def llamar_google_directo(prompt, file_bytes, mime_type="image/jpeg"):
     api_key = os.environ.get("GEMINI_API_KEY")
     modelo = 'gemini-flash-latest'
@@ -44,7 +43,6 @@ def llamar_google_directo(prompt, file_bytes, mime_type="image/jpeg"):
 def index():
     return render_template('index.html')
 
-# --- NUEVA SECCIÓN: PROCESAR AUDIO DE VOZ ---
 @app.route('/dictar', methods=['POST'])
 def dictar():
     if 'audio' not in request.files:
@@ -53,8 +51,6 @@ def dictar():
     try:
         audio_file = request.files['audio']
         audio_bytes = audio_file.read()
-        
-        # Le decimos a Google que es un archivo de voz
         mime_type = audio_file.mimetype if audio_file.mimetype else 'audio/webm'
         
         prompt = (
@@ -73,7 +69,6 @@ def dictar():
         return jsonify({'tipo': 'dictado', 'datos': datos})
     except Exception as e:
         return jsonify({'error': str(e)})
-# ---------------------------------------------
 
 @app.route('/calcular', methods=['POST'])
 def calcular():
@@ -127,7 +122,8 @@ def calcular():
             bandejas = int(request.form.get('bandejas', 0) or 0)
             espera = int(request.form.get('espera', 0) or 0)
             
-            total_manual = (cajones * (14 if 'Burrito' in sabor else 30)) + (bandejas * 40) + espera
+            cajones_total = cajones * (14 if 'Burrito' in sabor else 30)
+            bandejas_total = bandejas * 40
             
             prompt = f"Cuenta las empanadas visibles de {sabor}. Devuelve SOLO un JSON: {{\"cantidad\": numero}}. Ejemplo: {{\"cantidad\": 24}}"
             texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros, "image/jpeg")
@@ -139,7 +135,13 @@ def calcular():
             except:
                 total_ia = 0
                     
-            return jsonify({'tipo': 'individual', 'sabor': sabor, 'total': total_manual + total_ia})
+            return jsonify({
+                'tipo': 'individual', 
+                'sabor': sabor, 
+                'congelador': cajones_total,
+                'heladera': bandejas_total,
+                'espera': espera + total_ia
+            })
             
     except Exception as e:
         return jsonify({'error': str(e)})
