@@ -18,12 +18,18 @@
         .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
         .table-responsive { overflow-x: auto; margin-top: 10px; }
         table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px;}
-        th, td { padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6; }
+        th, td { padding: 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle;}
         th { background-color: #f1f3f5; color: #495057; font-size: 10px;}
         td:first-child { text-align: left; font-weight: bold; }
-        .total-cell { font-weight: bold; color: #28a745; font-size: 13px; background: #e9ecef;}
+        .total-cell { font-weight: bold; color: #28a745; font-size: 14px; background: #e9ecef;}
         
-        /* Estilos para el bloque manual de otros productos */
+        /* Cajas editables dentro de la tabla */
+        .edit-input { width: 100%; min-width: 35px; padding: 6px 2px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 13px; box-sizing: border-box; background-color: #fff; color: #333; }
+        .edit-input:focus { border-color: #80bdff; outline: none; background-color: #e6f2ff; }
+        
+        /* Fila de Totales */
+        .tfoot-row td { background-color: #d4edda; font-weight: bold; color: #155724; font-size: 14px; }
+
         .otros-block { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
         .otros-title { margin: 0 0 8px 0; font-size: 14px; color: #d35400; }
         .input-duo { display: flex; gap: 10px; }
@@ -67,11 +73,14 @@
                     </optgroup>
                     <optgroup label="Burritos">
                         <option value="Burrito de Ternera">Burrito de Ternera (Cajón x14)</option>
+                        <!-- NUEVOS BURRITOS AGREGADOS -->
+                        <option value="Burrito de Cerdo">Burrito de Cerdo (Cajón x14)</option>
+                        <option value="Burrito de Pollo">Burrito de Pollo (Cajón x14)</option>
+                        <option value="Burrito de Vegetales">Burrito de Vegetales (Cajón x14)</option>
                     </optgroup>
                 </select>
             </div>
             
-            <!-- CAMPOS MANUALES PARA EMPANADAS -->
             <div id="manualInputs" style="display: none;">
                 <div class="form-group">
                     <label>📦 Cajones COMPLETOS (Congelador):</label>
@@ -87,7 +96,6 @@
                 </div>
             </div>
 
-            <!-- CAMPOS MANUALES PARA OTROS PRODUCTOS (PIZZAS, PANCHOS, QUESO) -->
             <div id="otrosInputs" style="display: none;">
                 <h4 style="text-align: center; color: #333; margin-top: 0;">🍕 Carga Manual de Productos</h4>
                 
@@ -123,7 +131,6 @@
                 </div>
             </div>
 
-            <!-- OPIONES DE FOTO Y VOZ -->
             <div id="zonaArchivos">
                 <div id="zonaFotos">
                     <div class="file-box">
@@ -147,8 +154,10 @@
         </form>
     </div>
 
+    <!-- VISTA PRELIMINAR EDITABLE -->
     <div class="card">
-        <h3 style="margin-top: 0; text-align: center;">Resumen Detallado</h3>
+        <h3 style="margin-top: 0; text-align: center;">Vista Preliminar Editable</h3>
+        <p style="text-align: center; font-size: 11px; color: #666;">Puedes tocar cualquier número para corregirlo antes de exportar.</p>
         <div class="table-responsive">
             <table id="tablaResultados">
                 <thead>
@@ -166,6 +175,9 @@
                 <tbody id="tablaBody">
                     <tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>
                 </tbody>
+                <tfoot id="tablaFoot">
+                    <!-- Los totales se generarán aquí -->
+                </tfoot>
             </table>
         </div>
         <button class="btn-exportar" onclick="exportarCSV()">📥 Exportar a Excel (CSV)</button>
@@ -219,24 +231,44 @@
             }
         }
 
+        // LÓGICA DE EDICIÓN MANUAL
+        function editarCelda(sabor, campo, valor) {
+            let val = parseInt(valor) || 0;
+            if (val < 0) val = 0;
+            inventario[sabor][campo] = val;
+            actualizarTabla(); // Recalcula totales automáticamente
+        }
+
         function actualizarTabla() {
             const tbody = document.getElementById('tablaBody');
+            const tfoot = document.getElementById('tablaFoot');
             tbody.innerHTML = '';
+            tfoot.innerHTML = '';
             let hayDatos = false;
+            
+            let sumas = { mostrador: 0, congelador: 0, heladera: 0, espera: 0, crudos: 0, cocidos: 0, totalGeneral: 0 };
             
             for (const [sabor, loc] of Object.entries(inventario)) {
                 const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0) {
+                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
                     hayDatos = true;
+                    
+                    // Sumando para la fila inferior
+                    sumas.mostrador += loc.mostrador; sumas.congelador += loc.congelador;
+                    sumas.heladera += loc.heladera; sumas.espera += loc.espera;
+                    sumas.crudos += loc.crudos; sumas.cocidos += loc.cocidos;
+                    sumas.totalGeneral += total;
+
                     const tr = document.createElement('tr');
+                    // Celdas editables!
                     tr.innerHTML = `
                         <td>${sabor}</td>
-                        <td>${loc.mostrador || '-'}</td>
-                        <td>${loc.congelador || '-'}</td>
-                        <td>${loc.heladera || '-'}</td>
-                        <td>${loc.espera || '-'}</td>
-                        <td>${loc.crudos || '-'}</td>
-                        <td>${loc.cocidos || '-'}</td>
+                        <td><input type="number" class="edit-input" value="${loc.mostrador}" onchange="editarCelda('${sabor}', 'mostrador', this.value)"></td>
+                        <td><input type="number" class="edit-input" value="${loc.congelador}" onchange="editarCelda('${sabor}', 'congelador', this.value)"></td>
+                        <td><input type="number" class="edit-input" value="${loc.heladera}" onchange="editarCelda('${sabor}', 'heladera', this.value)"></td>
+                        <td><input type="number" class="edit-input" value="${loc.espera}" onchange="editarCelda('${sabor}', 'espera', this.value)"></td>
+                        <td><input type="number" class="edit-input" value="${loc.crudos}" onchange="editarCelda('${sabor}', 'crudos', this.value)"></td>
+                        <td><input type="number" class="edit-input" value="${loc.cocidos}" onchange="editarCelda('${sabor}', 'cocidos', this.value)"></td>
                         <td class="total-cell">${total}</td>
                     `;
                     tbody.appendChild(tr);
@@ -244,6 +276,21 @@
             }
             if (!hayDatos) {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
+            } else {
+                // Dibujamos la fila de Totales Generales
+                const trFoot = document.createElement('tr');
+                trFoot.className = 'tfoot-row';
+                trFoot.innerHTML = `
+                    <td style="text-align: right;">TOTAL:</td>
+                    <td>${sumas.mostrador}</td>
+                    <td>${sumas.congelador}</td>
+                    <td>${sumas.heladera}</td>
+                    <td>${sumas.espera}</td>
+                    <td>${sumas.crudos}</td>
+                    <td>${sumas.cocidos}</td>
+                    <td>${sumas.totalGeneral}</td>
+                `;
+                tfoot.appendChild(trFoot);
             }
         }
 
@@ -258,7 +305,7 @@
             let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos(Heladera/Unid);Cocidos(Pre);TOTAL\n';
             for (const [sabor, loc] of Object.entries(inventario)) {
                 const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0) {
+                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
                     csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
                 }
             }
@@ -278,7 +325,6 @@
             e.preventDefault();
             const sabor = document.getElementById('sabor').value;
             
-            // --- 1. SI ES EL MÓDULO MANUAL DE OTROS PRODUCTOS ---
             if (sabor === 'OTROS_PRODUCTOS') {
                 const pgc = parseInt(document.getElementById('pg_crudas').value) || 0;
                 const pgo = parseInt(document.getElementById('pg_cocidas').value) || 0;
@@ -316,12 +362,10 @@
                 return;
             }
 
-            // Verificamos si adjuntó foto
             const file1 = document.getElementById('foto').files.length;
             const file2 = document.getElementById('foto_galeria').files.length;
             const tieneFoto = (file1 > 0 || file2 > 0);
 
-            // --- 2. SABOR INDIVIDUAL SIN FOTO (100% MANUAL Y RÁPIDO) ---
             if (sabor !== 'MOSTRADOR_COMPLETO' && sabor !== 'CAJON_CONGELADOS' && !tieneFoto) {
                 const cajones = parseInt(document.getElementById('cajones').value) || 0;
                 const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
@@ -342,16 +386,14 @@
                 actualizarTabla();
                 document.getElementById('inventarioForm').reset();
                 toggleInputs();
-                return; // Cortamos aquí para que NO gaste internet enviando nada a Google
+                return; 
             }
 
-            // --- 3. VERIFICACIÓN DE SEGURIDAD PARA FOTOS ---
             if (!tieneFoto) {
                 alert("Falta seleccionar una foto para que la Inteligencia Artificial la analice.");
                 return;
             }
 
-            // --- 4. SI LLEGÓ HASTA AQUÍ, PROCEDEMOS NORMAL ENVIANDO LA FOTO A GOOGLE ---
             const btn = document.getElementById('btnCalcular');
             btn.innerText = 'Procesando Foto...';
             btn.disabled = true;
@@ -388,11 +430,11 @@
             } finally {
                 btn.innerText = '➕ Procesar Foto';
                 btn.disabled = false;
-                toggleInputs(); // Refresca el texto del botón al estado original
+                toggleInputs();
             }
         });
 
-        // ---- LÓGICA PARA VOZ ----
+        // LÓGICA PARA VOZ 
         let mediaRecorder;
         let audioChunks = [];
         const btnGrabar = document.getElementById('btnGrabar');
