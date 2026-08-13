@@ -17,14 +17,24 @@
         .btn-reintentar { background: #ffc107; color: #000; margin-top: 5px; display: none; }
         .btn-exportar { background: #17a2b8; margin-top: 15px; }
         .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
-        .table-responsive { overflow-x: auto; margin-top: 10px; }
-        table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px;}
-        th, td { padding: 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle;}
-        th { background-color: #f1f3f5; color: #495057; font-size: 10px;}
-        td:first-child { text-align: left; font-weight: bold; }
-        .total-cell { font-weight: bold; color: #28a745; font-size: 13px; background: #e9ecef;}
         
-        .edit-input { width: 100%; min-width: 35px; padding: 6px 2px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 13px; box-sizing: border-box; background-color: #fff; color: #333; }
+        /* Configuración de la tabla con Scroll */
+        .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; min-width: 550px; }
+        th, td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
+        th { background-color: #f1f3f5; color: #495057; font-size: 10px; border-top: 1px solid #dee2e6; }
+        
+        /* COLUMNAS FLOTANTES (El truco mágico) */
+        .sticky-col-left { position: sticky; left: 0; background-color: white; z-index: 2; box-shadow: 2px 0 5px rgba(0,0,0,0.1); text-align: left; font-weight: bold; }
+        .sticky-col-right { position: sticky; right: 0; background-color: #e9ecef; z-index: 2; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+        
+        /* Asegurar que las cabeceras flotantes queden por encima */
+        thead th.sticky-col-left, thead th.sticky-col-right { background-color: #f1f3f5; z-index: 3; }
+        tfoot td.sticky-col-left, tfoot td.sticky-col-right { background-color: #d4edda; z-index: 3; }
+
+        .total-cell { font-weight: bold; color: #28a745; font-size: 14px; }
+        
+        .edit-input { width: 100%; min-width: 40px; padding: 8px 2px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 14px; box-sizing: border-box; background-color: #fff; color: #333; }
         .edit-input:focus { border-color: #80bdff; outline: none; background-color: #e6f2ff; }
         
         .tfoot-row td { background-color: #d4edda; font-weight: bold; color: #155724; font-size: 14px; }
@@ -150,19 +160,19 @@
 
     <div class="card">
         <h3 style="margin-top: 0; text-align: center;">Vista Preliminar Editable</h3>
-        <p style="text-align: center; font-size: 11px; color: #666;">Toca cualquier número para corregirlo.</p>
+        <p style="text-align: center; font-size: 11px; color: #666;">Desliza la tabla y corrige los números si es necesario.</p>
         <div class="table-responsive">
             <table id="tablaResultados">
                 <thead>
                     <tr>
-                        <th>Producto</th>
+                        <th class="sticky-col-left">Producto</th>
                         <th>Vitr.</th>
                         <th>Cong.</th>
                         <th>Helad.</th>
                         <th>Esp.</th>
                         <th>Crudos</th>
                         <th>Cocidos</th>
-                        <th>TOTAL</th>
+                        <th class="sticky-col-right">TOTAL</th>
                     </tr>
                 </thead>
                 <tbody id="tablaBody">
@@ -240,19 +250,30 @@
                     sumas.crudos += loc.crudos; sumas.cocidos += loc.cocidos;
                     sumas.totalGeneral += total;
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${sabor}</td>
+                    tr.innerHTML = `
+                        <td class="sticky-col-left">${sabor}</td>
                         <td><input type="number" class="edit-input" value="${loc.mostrador}" onchange="editarCelda('${sabor}', 'mostrador', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.congelador}" onchange="editarCelda('${sabor}', 'congelador', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.heladera}" onchange="editarCelda('${sabor}', 'heladera', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.espera}" onchange="editarCelda('${sabor}', 'espera', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.crudos}" onchange="editarCelda('${sabor}', 'crudos', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.cocidos}" onchange="editarCelda('${sabor}', 'cocidos', this.value)"></td>
-                        <td class="total-cell">${total}</td>`;
+                        <td class="sticky-col-right total-cell">${total}</td>`;
                     tbody.appendChild(tr);
                 }
             }
             if (hayDatos) {
-                tfoot.innerHTML = `<tr class="tfoot-row"><td style="text-align: right;">TOTAL:</td><td>${sumas.mostrador}</td><td>${sumas.congelador}</td><td>${sumas.heladera}</td><td>${sumas.espera}</td><td>${sumas.crudos}</td><td>${sumas.cocidos}</td><td>${sumas.totalGeneral}</td></tr>`;
+                tfoot.innerHTML = `
+                    <tr class="tfoot-row">
+                        <td class="sticky-col-left" style="text-align: right;">TOTAL:</td>
+                        <td>${sumas.mostrador}</td>
+                        <td>${sumas.congelador}</td>
+                        <td>${sumas.heladera}</td>
+                        <td>${sumas.espera}</td>
+                        <td>${sumas.crudos}</td>
+                        <td>${sumas.cocidos}</td>
+                        <td class="sticky-col-right">${sumas.totalGeneral}</td>
+                    </tr>`;
             } else {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
             }
@@ -266,7 +287,9 @@
             let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos;Cocidos;TOTAL\n';
             for (const [sabor, loc] of Object.entries(inventario)) {
                 const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0) csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
+                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
+                    csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
+                }
             }
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
