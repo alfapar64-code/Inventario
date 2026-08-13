@@ -13,8 +13,6 @@ app = Flask(__name__)
 
 def llamar_google_directo(prompt, img_bytes):
     api_key = os.environ.get("GEMINI_API_KEY")
-    
-    # LA LLAVE MAESTRA: Usamos el comodín universal que detectamos en tu lista
     modelo = 'gemini-flash-latest'
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{modelo}:generateContent?key={api_key}"
     
@@ -72,6 +70,27 @@ def calcular():
             texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
             datos = json.loads(texto_limpio)
             return jsonify({'tipo': 'mostrador', 'datos': datos})
+
+        # --- NUEVA SECCIÓN: EL CAJÓN DE CONGELADOS ---
+        elif sabor == 'CAJON_CONGELADOS':
+            prompt = (
+                "Actúa como un auditor de inventario experto. Analiza este cajón verde dividido en 4 filas horizontales. "
+                "Cada fila contiene un sabor diferente de empanadas. Cuenta meticulosamente las empanadas visibles en cada fila. "
+                "Ten en cuenta que la capacidad máxima por fila es de 6 empanadas. "
+                "Fila 1 (Superior): Puerro y Hongos. "
+                "Fila 2: Choclo y Calabaza. "
+                "Fila 3: Pollo al Curry (masa color amarillo). "
+                "Fila 4 (Inferior): Carne Criolla. "
+                "Devuelve SOLO un JSON válido con la cantidad exacta de cada sabor. Ejemplo: {\"Puerro y Hongos\": 5, \"Choclo y Calabaza\": 5, \"Pollo al Curry\": 6, \"Carne Criolla\": 4}"
+            )
+            texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
+            texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
+            datos = json.loads(texto_limpio)
+            
+            # Lo devolvemos etiquetado como 'cajon_multiple' para que la pantalla sepa qué mostrar
+            return jsonify({'tipo': 'cajon_multiple', 'datos': datos})
+
+        # ---------------------------------------------
 
         else:
             cajones = int(request.form.get('cajones', 0) or 0)
