@@ -7,20 +7,23 @@
     <style>
         body { 
             font-family: -apple-system, Arial, sans-serif; padding: 15px; margin: 0 auto; max-width: 500px;
-            background-color: #fdfaf6; /* Fondo Crema Cálido */
+            background-color: #fdfaf6; 
         }
         h2 { color: #333; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; font-size: 14px; }
         select, input[type="number"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; }
+        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px;}
         .btn-limpiar { background: #dc3545; margin-top: 15px; }
+        .btn-grabar { background: #007bff; }
         .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dee2e6; }
         th { background-color: #f1f3f5; color: #495057; }
         .total-cell { font-weight: bold; color: #28a745; font-size: 16px; }
+        #estadoGrabacion { color: #dc3545; font-weight: bold; display: none; text-align: center; margin-top: 10px; animation: parpadeo 1s infinite; }
+        @keyframes parpadeo { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
@@ -74,17 +77,27 @@
                 </div>
             </div>
 
-            <div class="file-box">
-                <label>📷 Opción 1: Abrir Cámara Directa</label>
-                <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
+            <!-- OPIONES DE FOTO -->
+            <div id="zonaFotos">
+                <div class="file-box">
+                    <label>📷 Opción 1: Abrir Cámara Directa</label>
+                    <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
+                </div>
+                <div class="file-box">
+                    <label>🖼️ Opción 2: Elegir de la Galería</label>
+                    <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
+                </div>
+                <button type="submit" id="btnCalcular">➕ Sumar al Inventario por Foto</button>
             </div>
             
-            <div class="file-box">
-                <label>🖼️ Opción 2: Elegir de la Galería</label>
-                <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
+            <!-- OPCION DE DICTADO POR VOZ -->
+            <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
+                <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
+                <p style="font-size: 12px; color: #666; text-align: center;">Ej: "12 jamón y queso, 5 humitas..."</p>
+                <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
+                <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
             </div>
-            
-            <button type="submit" id="btnCalcular">➕ Sumar al Inventario</button>
+
         </form>
     </div>
 
@@ -106,7 +119,6 @@
 
     <script>
         let inventario = {};
-
         const mapaMostrador = {
             "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
             "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
@@ -117,11 +129,21 @@
         function toggleInputs() {
             const sabor = document.getElementById('sabor').value;
             const manualInputs = document.getElementById('manualInputs');
-            // Oculta los campos manuales si es foto de mostrador o el cajón de 4 sabores
+            const zonaFotos = document.getElementById('zonaFotos');
+            const zonaVoz = document.getElementById('zonaVoz');
+            
+            // Oculta campos manuales para las operaciones múltiples
             if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
                 manualInputs.style.display = 'none';
             } else {
                 manualInputs.style.display = 'block';
+            }
+            
+            // Muestra el botón de Voz SÓLO cuando elegimos la vitrina completa
+            if (sabor === 'MOSTRADOR_COMPLETO') {
+                zonaVoz.style.display = 'block';
+            } else {
+                zonaVoz.style.display = 'none';
             }
         }
 
@@ -150,10 +172,11 @@
             }
         }
 
+        // ---- LÓGICA PARA ENVIAR FOTOS ----
         document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('btnCalcular');
-            btn.innerText = 'Procesando...';
+            btn.innerText = 'Procesando Foto...';
             btn.disabled = true;
 
             const formData = new FormData(e.target);
@@ -170,25 +193,88 @@
                         inventario[nombreCompleto] = (inventario[nombreCompleto] || 0) + parseInt(cant);
                     }
                 } else if (data.tipo === 'cajon_multiple') {
-                    // Procesa los 4 sabores congelados de un solo golpe
                     for (const [nombreSabor, cant] of Object.entries(data.datos)) {
                         inventario[nombreSabor] = (inventario[nombreSabor] || 0) + parseInt(cant);
                     }
                 } else if (data.tipo === 'individual') {
                     inventario[data.sabor] = (inventario[data.sabor] || 0) + parseInt(data.total);
                 }
-                
                 actualizarTabla();
                 document.getElementById('inventarioForm').reset();
                 toggleInputs();
-
             } catch (error) {
-                alert('Ocurrió un error al procesar los datos o la imagen.');
+                alert('Ocurrió un error al procesar los datos de la foto.');
             } finally {
-                btn.innerText = '➕ Sumar al Inventario';
+                btn.innerText = '➕ Sumar al Inventario por Foto';
                 btn.disabled = false;
             }
         });
+
+        // ---- LÓGICA PARA DICTADO POR VOZ ----
+        let mediaRecorder;
+        let audioChunks = [];
+        const btnGrabar = document.getElementById('btnGrabar');
+        const estadoGrabacion = document.getElementById('estadoGrabacion');
+
+        btnGrabar.addEventListener('click', async () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                // Detener grabación
+                mediaRecorder.stop();
+                btnGrabar.innerText = 'Procesando Audio...';
+                btnGrabar.style.background = '#6c757d';
+                btnGrabar.disabled = true;
+                estadoGrabacion.style.display = 'none';
+            } else {
+                // Iniciar grabación (Pide permisos de micrófono)
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.addEventListener('dataavailable', event => {
+                        audioChunks.push(event.data);
+                    });
+
+                    mediaRecorder.addEventListener('stop', async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        enviarAudio(audioBlob);
+                    });
+
+                    mediaRecorder.start();
+                    btnGrabar.innerText = '⏹️ Detener y Enviar';
+                    btnGrabar.style.background = '#dc3545';
+                    estadoGrabacion.style.display = 'block';
+                } catch (err) {
+                    alert('No se pudo acceder al micrófono. Por favor, dale permisos a la página. Error: ' + err.message);
+                }
+            }
+        });
+
+        async function enviarAudio(audioBlob) {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'dictado.webm');
+
+            try {
+                const response = await fetch('/dictar', { method: 'POST', body: formData });
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert(data.error);
+                } else if (data.tipo === 'dictado') {
+                    for (const [sabor, cant] of Object.entries(data.datos)) {
+                        inventario[sabor] = (inventario[sabor] || 0) + parseInt(cant);
+                    }
+                    actualizarTabla();
+                    alert("¡Dictado procesado y sumado con éxito!");
+                }
+            } catch (error) {
+                alert('Error al enviar el audio.');
+            } finally {
+                btnGrabar.innerText = '🔴 Iniciar Grabación';
+                btnGrabar.style.background = '#007bff';
+                btnGrabar.disabled = false;
+            }
+        }
 
         toggleInputs();
     </script>
