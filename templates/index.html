@@ -32,6 +32,7 @@
                 <label>Seleccionar Variedad u Operación:</label>
                 <select name="sabor" id="sabor" onchange="toggleInputs()">
                     <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto Mostrador)</option>
+                    <option value="CAJON_CONGELADOS">🧊 CAJÓN CONGELADOS (4 Sabores)</option>
                     <optgroup label="Tradicionales">
                         <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
                         <option value="Humita (HM)">Humita (HM)</option>
@@ -116,7 +117,12 @@
         function toggleInputs() {
             const sabor = document.getElementById('sabor').value;
             const manualInputs = document.getElementById('manualInputs');
-            manualInputs.style.display = (sabor === 'MOSTRADOR_COMPLETO') ? 'none' : 'block';
+            // Oculta los campos manuales si es foto de mostrador o el cajón de 4 sabores
+            if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
+                manualInputs.style.display = 'none';
+            } else {
+                manualInputs.style.display = 'block';
+            }
         }
 
         function actualizarTabla() {
@@ -162,6 +168,11 @@
                     for (const [sigla, cant] of Object.entries(data.datos)) {
                         const nombreCompleto = mapaMostrador[sigla] || sigla;
                         inventario[nombreCompleto] = (inventario[nombreCompleto] || 0) + parseInt(cant);
+                    }
+                } else if (data.tipo === 'cajon_multiple') {
+                    // Procesa los 4 sabores congelados de un solo golpe
+                    for (const [nombreSabor, cant] of Object.entries(data.datos)) {
+                        inventario[nombreSabor] = (inventario[nombreSabor] || 0) + parseInt(cant);
                     }
                 } else if (data.tipo === 'individual') {
                     inventario[data.sabor] = (inventario[data.sabor] || 0) + parseInt(data.total);
