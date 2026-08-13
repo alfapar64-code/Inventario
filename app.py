@@ -62,9 +62,12 @@ def calcular():
 
         if sabor == 'MOSTRADOR_COMPLETO':
             prompt = (
-                "Analiza la vitrina de empanadas. Carriles: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
-                "Devuelve SOLO un JSON válido. Ejemplo: {\"JQ\": 5, \"HM\": 2, \"CQ\": 0, ...}."
-                "Suma carril 1 y 12 en JQ."
+                "Actúa como auditor de inventario. Esta imagen es una vitrina de empanadas dividida por barras de metal en 12 carriles verticales exactos. "
+                "De izquierda a derecha, los carriles corresponden a: 1: JQ, 2: HM, 3: CQ, 4: CA, 5: RJ, 6: BD, 7: CP, 8: PL, 9: CB, 10: CC, 11: CS, 12: JQ. "
+                "Tu tarea es mirar CADA carril individualmente, de izquierda a derecha, y contar cuántas empanadas hay en cada uno. "
+                "Presta atención a las empanadas superpuestas hacia el fondo. "
+                "IMPORTANTE: Suma las cantidades del carril 1 y el carril 12 bajo la misma clave 'JQ'. "
+                "Devuelve SOLO un JSON válido con los totales. Ejemplo: {\"JQ\": 15, \"HM\": 4, \"CQ\": 0, \"CA\": 2, \"RJ\": 5, \"BD\": 8, \"CP\": 1, \"PL\": 3, \"CB\": 6, \"CC\": 9, \"CS\": 12}"
             )
             texto_respuesta = llamar_google_directo(prompt, img_bytes_seguros)
             texto_limpio = texto_respuesta.strip().replace('```json', '').replace('```', '')
