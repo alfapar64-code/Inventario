@@ -14,6 +14,7 @@
         button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px;}
         .btn-limpiar { background: #dc3545; margin-top: 15px; }
         .btn-grabar { background: #007bff; }
+        .btn-reintentar { background: #ffc107; color: #000; margin-top: 5px; display: none; }
         .btn-exportar { background: #17a2b8; margin-top: 15px; }
         .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
         .table-responsive { overflow-x: auto; margin-top: 10px; }
@@ -21,13 +22,11 @@
         th, td { padding: 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle;}
         th { background-color: #f1f3f5; color: #495057; font-size: 10px;}
         td:first-child { text-align: left; font-weight: bold; }
-        .total-cell { font-weight: bold; color: #28a745; font-size: 14px; background: #e9ecef;}
+        .total-cell { font-weight: bold; color: #28a745; font-size: 13px; background: #e9ecef;}
         
-        /* Cajas editables dentro de la tabla */
         .edit-input { width: 100%; min-width: 35px; padding: 6px 2px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 13px; box-sizing: border-box; background-color: #fff; color: #333; }
         .edit-input:focus { border-color: #80bdff; outline: none; background-color: #e6f2ff; }
         
-        /* Fila de Totales */
         .tfoot-row td { background-color: #d4edda; font-weight: bold; color: #155724; font-size: 14px; }
 
         .otros-block { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
@@ -73,7 +72,6 @@
                     </optgroup>
                     <optgroup label="Burritos">
                         <option value="Burrito de Ternera">Burrito de Ternera (Cajón x14)</option>
-                        <!-- NUEVOS BURRITOS AGREGADOS -->
                         <option value="Burrito de Cerdo">Burrito de Cerdo (Cajón x14)</option>
                         <option value="Burrito de Pollo">Burrito de Pollo (Cajón x14)</option>
                         <option value="Burrito de Vegetales">Burrito de Vegetales (Cajón x14)</option>
@@ -98,31 +96,27 @@
 
             <div id="otrosInputs" style="display: none;">
                 <h4 style="text-align: center; color: #333; margin-top: 0;">🍕 Carga Manual de Productos</h4>
-                
                 <div class="otros-block">
                     <h5 class="otros-title">Pizzas Grandes 32cm</h5>
                     <div class="input-duo">
-                        <div><label>Crudas (Heladera)</label><input type="number" id="pg_crudas" value="0" min="0"></div>
-                        <div><label>Cocidas (Prepizzas)</label><input type="number" id="pg_cocidas" value="0" min="0"></div>
+                        <div><label>Crudas</label><input type="number" id="pg_crudas" value="0" min="0"></div>
+                        <div><label>Cocidas</label><input type="number" id="pg_cocidas" value="0" min="0"></div>
                     </div>
                 </div>
-
                 <div class="otros-block">
                     <h5 class="otros-title">Pizzas Individuales 18cm</h5>
                     <div class="input-duo">
-                        <div><label>Crudas (Heladera)</label><input type="number" id="pi_crudas" value="0" min="0"></div>
-                        <div><label>Cocidas (Prepizzas)</label><input type="number" id="pi_cocidas" value="0" min="0"></div>
+                        <div><label>Crudas</label><input type="number" id="pi_crudas" value="0" min="0"></div>
+                        <div><label>Cocidas</label><input type="number" id="pi_cocidas" value="0" min="0"></div>
                     </div>
                 </div>
-
                 <div class="otros-block">
                     <h5 class="otros-title" style="color:#c0392b;">Panchos</h5>
                     <div class="input-duo">
-                        <div><label>Crudos (Heladera)</label><input type="number" id="pancho_crudos" value="0" min="0"></div>
-                        <div><label>Cocidos (Prepanchos)</label><input type="number" id="pancho_cocidos" value="0" min="0"></div>
+                        <div><label>Crudos</label><input type="number" id="pancho_crudos" value="0" min="0"></div>
+                        <div><label>Cocidos</label><input type="number" id="pancho_cocidos" value="0" min="0"></div>
                     </div>
                 </div>
-
                 <div class="otros-block">
                     <h5 class="otros-title" style="color:#f39c12;">Quesos Muzarella</h5>
                     <div class="input-duo">
@@ -142,10 +136,10 @@
                         <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
                     </div>
                 </div>
-                
                 <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
                     <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
                     <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
+                    <button type="button" id="btnReintentar" class="btn-reintentar" style="display:none;">🔄 Reintentar envío anterior</button>
                     <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
                 </div>
             </div>
@@ -154,10 +148,9 @@
         </form>
     </div>
 
-    <!-- VISTA PRELIMINAR EDITABLE -->
     <div class="card">
         <h3 style="margin-top: 0; text-align: center;">Vista Preliminar Editable</h3>
-        <p style="text-align: center; font-size: 11px; color: #666;">Puedes tocar cualquier número para corregirlo antes de exportar.</p>
+        <p style="text-align: center; font-size: 11px; color: #666;">Toca cualquier número para corregirlo.</p>
         <div class="table-responsive">
             <table id="tablaResultados">
                 <thead>
@@ -175,9 +168,7 @@
                 <tbody id="tablaBody">
                     <tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>
                 </tbody>
-                <tfoot id="tablaFoot">
-                    <!-- Los totales se generarán aquí -->
-                </tfoot>
+                <tfoot id="tablaFoot"></tfoot>
             </table>
         </div>
         <button class="btn-exportar" onclick="exportarCSV()">📥 Exportar a Excel (CSV)</button>
@@ -217,12 +208,7 @@
                 zonaArchivos.style.display = 'block';
                 btnCalcular.innerText = "➕ Guardar (Con o Sin Foto)";
             }
-            
-            if (sabor === 'MOSTRADOR_COMPLETO') {
-                zonaVoz.style.display = 'block';
-            } else {
-                zonaVoz.style.display = 'none';
-            }
+            zonaVoz.style.display = (sabor === 'MOSTRADOR_COMPLETO') ? 'block' : 'none';
         }
 
         function inicializarSabor(sabor) {
@@ -231,135 +217,80 @@
             }
         }
 
-        // LÓGICA DE EDICIÓN MANUAL
         function editarCelda(sabor, campo, valor) {
             let val = parseInt(valor) || 0;
             if (val < 0) val = 0;
             inventario[sabor][campo] = val;
-            actualizarTabla(); // Recalcula totales automáticamente
+            actualizarTabla();
         }
 
         function actualizarTabla() {
             const tbody = document.getElementById('tablaBody');
             const tfoot = document.getElementById('tablaFoot');
-            tbody.innerHTML = '';
-            tfoot.innerHTML = '';
+            tbody.innerHTML = ''; tfoot.innerHTML = '';
             let hayDatos = false;
-            
             let sumas = { mostrador: 0, congelador: 0, heladera: 0, espera: 0, crudos: 0, cocidos: 0, totalGeneral: 0 };
             
             for (const [sabor, loc] of Object.entries(inventario)) {
                 const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
                 if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
                     hayDatos = true;
-                    
-                    // Sumando para la fila inferior
                     sumas.mostrador += loc.mostrador; sumas.congelador += loc.congelador;
                     sumas.heladera += loc.heladera; sumas.espera += loc.espera;
                     sumas.crudos += loc.crudos; sumas.cocidos += loc.cocidos;
                     sumas.totalGeneral += total;
-
                     const tr = document.createElement('tr');
-                    // Celdas editables!
-                    tr.innerHTML = `
-                        <td>${sabor}</td>
+                    tr.innerHTML = `<td>${sabor}</td>
                         <td><input type="number" class="edit-input" value="${loc.mostrador}" onchange="editarCelda('${sabor}', 'mostrador', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.congelador}" onchange="editarCelda('${sabor}', 'congelador', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.heladera}" onchange="editarCelda('${sabor}', 'heladera', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.espera}" onchange="editarCelda('${sabor}', 'espera', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.crudos}" onchange="editarCelda('${sabor}', 'crudos', this.value)"></td>
                         <td><input type="number" class="edit-input" value="${loc.cocidos}" onchange="editarCelda('${sabor}', 'cocidos', this.value)"></td>
-                        <td class="total-cell">${total}</td>
-                    `;
+                        <td class="total-cell">${total}</td>`;
                     tbody.appendChild(tr);
                 }
             }
-            if (!hayDatos) {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
+            if (hayDatos) {
+                tfoot.innerHTML = `<tr class="tfoot-row"><td style="text-align: right;">TOTAL:</td><td>${sumas.mostrador}</td><td>${sumas.congelador}</td><td>${sumas.heladera}</td><td>${sumas.espera}</td><td>${sumas.crudos}</td><td>${sumas.cocidos}</td><td>${sumas.totalGeneral}</td></tr>`;
             } else {
-                // Dibujamos la fila de Totales Generales
-                const trFoot = document.createElement('tr');
-                trFoot.className = 'tfoot-row';
-                trFoot.innerHTML = `
-                    <td style="text-align: right;">TOTAL:</td>
-                    <td>${sumas.mostrador}</td>
-                    <td>${sumas.congelador}</td>
-                    <td>${sumas.heladera}</td>
-                    <td>${sumas.espera}</td>
-                    <td>${sumas.crudos}</td>
-                    <td>${sumas.cocidos}</td>
-                    <td>${sumas.totalGeneral}</td>
-                `;
-                tfoot.appendChild(trFoot);
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
             }
         }
 
         function limpiarInventario() {
-            if(confirm("¿Seguro que quieres limpiar todo el conteo actual?")) {
-                inventario = {};
-                actualizarTabla();
-            }
+            if(confirm("¿Seguro que quieres limpiar todo?")) { inventario = {}; actualizarTabla(); }
         }
 
         function exportarCSV() {
-            let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos(Heladera/Unid);Cocidos(Pre);TOTAL\n';
+            let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos;Cocidos;TOTAL\n';
             for (const [sabor, loc] of Object.entries(inventario)) {
                 const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
-                    csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
-                }
+                if (total > 0) csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
             }
-            
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url);
-            link.setAttribute("download", "Inventario_Central_Completo.csv");
-            link.style.visibility = 'hidden';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.setAttribute("href", url); link.setAttribute("download", "Inventario.csv");
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
         document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const sabor = document.getElementById('sabor').value;
-            
             if (sabor === 'OTROS_PRODUCTOS') {
                 const pgc = parseInt(document.getElementById('pg_crudas').value) || 0;
                 const pgo = parseInt(document.getElementById('pg_cocidas').value) || 0;
-                if (pgc > 0 || pgo > 0) {
-                    inicializarSabor('Pizza Grande 32cm');
-                    inventario['Pizza Grande 32cm'].crudos += pgc;
-                    inventario['Pizza Grande 32cm'].cocidos += pgo;
-                }
-
+                if (pgc > 0 || pgo > 0) { inicializarSabor('Pizza Grande 32cm'); inventario['Pizza Grande 32cm'].crudos += pgc; inventario['Pizza Grande 32cm'].cocidos += pgo; }
                 const pic = parseInt(document.getElementById('pi_crudas').value) || 0;
                 const pio = parseInt(document.getElementById('pi_cocidas').value) || 0;
-                if (pic > 0 || pio > 0) {
-                    inicializarSabor('Pizza Indiv. 18cm');
-                    inventario['Pizza Indiv. 18cm'].crudos += pic;
-                    inventario['Pizza Indiv. 18cm'].cocidos += pio;
-                }
-
+                if (pic > 0 || pio > 0) { inicializarSabor('Pizza Indiv. 18cm'); inventario['Pizza Indiv. 18cm'].crudos += pic; inventario['Pizza Indiv. 18cm'].cocidos += pio; }
                 const panc = parseInt(document.getElementById('pancho_crudos').value) || 0;
                 const pano = parseInt(document.getElementById('pancho_cocidos').value) || 0;
-                if (panc > 0 || pano > 0) {
-                    inicializarSabor('Panchos');
-                    inventario['Panchos'].crudos += panc;
-                    inventario['Panchos'].cocidos += pano;
-                }
-
+                if (panc > 0 || pano > 0) { inicializarSabor('Panchos'); inventario['Panchos'].crudos += panc; inventario['Panchos'].cocidos += pano; }
                 const queso = parseInt(document.getElementById('queso_unidades').value) || 0;
-                if (queso > 0) {
-                    inicializarSabor('Quesos Muzarella');
-                    inventario['Quesos Muzarella'].crudos += queso; 
-                }
-
-                actualizarTabla();
-                document.getElementById('inventarioForm').reset();
-                toggleInputs();
-                return;
+                if (queso > 0) { inicializarSabor('Quesos Muzarella'); inventario['Quesos Muzarella'].crudos += queso; }
+                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
             }
 
             const file1 = document.getElementById('foto').files.length;
@@ -370,51 +301,30 @@
                 const cajones = parseInt(document.getElementById('cajones').value) || 0;
                 const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
                 const espera = parseInt(document.getElementById('espera').value) || 0;
-
-                if (cajones === 0 && bandejas === 0 && espera === 0) {
-                    alert("Ingresa alguna cantidad o adjunta una foto para la Inteligencia Artificial.");
-                    return;
-                }
-
                 const multiplicador = sabor.includes('Burrito') ? 14 : 30;
-                
                 inicializarSabor(sabor);
                 inventario[sabor].congelador += (cajones * multiplicador);
                 inventario[sabor].heladera += (bandejas * 40);
                 inventario[sabor].espera += espera;
-
-                actualizarTabla();
-                document.getElementById('inventarioForm').reset();
-                toggleInputs();
-                return; 
+                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
             }
 
-            if (!tieneFoto) {
-                alert("Falta seleccionar una foto para que la Inteligencia Artificial la analice.");
-                return;
-            }
-
+            if (!tieneFoto) { alert("Falta foto."); return; }
             const btn = document.getElementById('btnCalcular');
-            btn.innerText = 'Procesando Foto...';
-            btn.disabled = true;
+            btn.innerText = 'Procesando...'; btn.disabled = true;
             const formData = new FormData(e.target);
-
             try {
                 const response = await fetch('/calcular', { method: 'POST', body: formData });
                 const data = await response.json();
-                
-                if (data.error) {
-                    alert(data.error);
-                } else if (data.tipo === 'mostrador') {
+                if (data.error) alert(data.error);
+                else if (data.tipo === 'mostrador') {
                     for (const [sigla, cant] of Object.entries(data.datos)) {
-                        const nombreCompleto = mapaMostrador[sigla] || sigla;
-                        inicializarSabor(nombreCompleto);
-                        inventario[nombreCompleto].mostrador += parseInt(cant);
+                        const nombre = mapaMostrador[sigla] || sigla;
+                        inicializarSabor(nombre); inventario[nombre].mostrador += parseInt(cant);
                     }
                 } else if (data.tipo === 'cajon_multiple') {
-                    for (const [nombreSabor, cant] of Object.entries(data.datos)) {
-                        inicializarSabor(nombreSabor);
-                        inventario[nombreSabor].congelador += parseInt(cant);
+                    for (const [sabor, cant] of Object.entries(data.datos)) {
+                        inicializarSabor(sabor); inventario[sabor].congelador += parseInt(cant);
                     }
                 } else if (data.tipo === 'individual') {
                     inicializarSabor(data.sabor);
@@ -422,83 +332,43 @@
                     inventario[data.sabor].heladera += parseInt(data.heladera);
                     inventario[data.sabor].espera += parseInt(data.espera);
                 }
-                actualizarTabla();
-                document.getElementById('inventarioForm').reset();
-                toggleInputs();
-            } catch (error) {
-                alert('Error procesando imagen. Intenta de nuevo.');
-            } finally {
-                btn.innerText = '➕ Procesar Foto';
-                btn.disabled = false;
-                toggleInputs();
-            }
+                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs();
+            } catch (error) { alert('Error procesando.'); } finally { btn.innerText = '➕ Procesar Foto'; btn.disabled = false; toggleInputs(); }
         });
 
-        // LÓGICA PARA VOZ 
-        let mediaRecorder;
-        let audioChunks = [];
-        const btnGrabar = document.getElementById('btnGrabar');
-        const estadoGrabacion = document.getElementById('estadoGrabacion');
+        let mediaRecorder, audioChunks = [], lastAudioBlob = null;
+        const btnGrabar = document.getElementById('btnGrabar'), btnReintentar = document.getElementById('btnReintentar'), estadoGrabacion = document.getElementById('estadoGrabacion');
 
         btnGrabar.addEventListener('click', async () => {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-                btnGrabar.innerText = 'Procesando Audio...';
-                btnGrabar.style.background = '#6c757d';
-                btnGrabar.disabled = true;
-                estadoGrabacion.style.display = 'none';
+                mediaRecorder.stop(); btnGrabar.innerText = 'Procesando...'; btnGrabar.disabled = true;
             } else {
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream);
-                    audioChunks = [];
-
-                    mediaRecorder.addEventListener('dataavailable', event => {
-                        audioChunks.push(event.data);
-                    });
-
-                    mediaRecorder.addEventListener('stop', async () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                        enviarAudio(audioBlob);
-                    });
-
-                    mediaRecorder.start();
-                    btnGrabar.innerText = '⏹️ Detener y Enviar';
-                    btnGrabar.style.background = '#dc3545';
-                    estadoGrabacion.style.display = 'block';
-                } catch (err) {
-                    alert('Por favor permite el uso del micrófono.');
-                }
+                    mediaRecorder = new MediaRecorder(stream); audioChunks = []; btnReintentar.style.display = 'none';
+                    mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
+                    mediaRecorder.addEventListener('stop', async () => { lastAudioBlob = new Blob(audioChunks, { type: 'audio/webm' }); enviarAudio(lastAudioBlob); });
+                    mediaRecorder.start(); btnGrabar.innerText = '⏹️ Detener'; btnGrabar.style.background = '#dc3545'; estadoGrabacion.style.display = 'block';
+                } catch (err) { alert('Permite micro.'); }
             }
         });
 
-        async function enviarAudio(audioBlob) {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'dictado.webm');
+        btnReintentar.addEventListener('click', () => { if (lastAudioBlob) enviarAudio(lastAudioBlob); });
 
+        async function enviarAudio(blob) {
+            btnGrabar.disabled = true; btnGrabar.innerText = 'Enviando...'; btnReintentar.style.display = 'none'; estadoGrabacion.style.display = 'none';
+            const formData = new FormData(); formData.append('audio', blob, 'dictado.webm');
             try {
                 const response = await fetch('/dictar', { method: 'POST', body: formData });
                 const data = await response.json();
-                
-                if (data.error) {
-                    alert(data.error);
-                } else if (data.tipo === 'dictado') {
-                    for (const [sabor, cant] of Object.entries(data.datos)) {
-                        inicializarSabor(sabor);
-                        inventario[sabor].mostrador += parseInt(cant);
-                    }
-                    actualizarTabla();
-                    alert("¡Dictado sumado con éxito!");
+                if (data.error) throw new Error(data.error);
+                else if (data.tipo === 'dictado') {
+                    for (const [sabor, cant] of Object.entries(data.datos)) { inicializarSabor(sabor); inventario[sabor].mostrador += parseInt(cant); }
+                    actualizarTabla(); alert("¡Dictado procesado!");
+                    btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false;
                 }
-            } catch (error) {
-                alert('Error enviando audio.');
-            } finally {
-                btnGrabar.innerText = '🔴 Iniciar Grabación';
-                btnGrabar.style.background = '#007bff';
-                btnGrabar.disabled = false;
-            }
+            } catch (err) { alert('Error: ' + err.message); btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false; btnReintentar.style.display = 'block'; }
         }
-
         toggleInputs();
     </script>
 </body>
