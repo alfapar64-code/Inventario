@@ -5,23 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario Central</title>
     <style>
-        body { 
-            font-family: -apple-system, Arial, sans-serif; padding: 15px; margin: 0 auto; max-width: 500px;
-            background-color: #fdfaf6; 
-        }
+        body { font-family: -apple-system, Arial, sans-serif; padding: 15px; margin: 0 auto; max-width: 550px; background-color: #fdfaf6; }
         h2 { color: #333; text-align: center; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; font-size: 14px; }
-        select, input[type="number"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
+        select, input[type="number"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px;}
         .btn-limpiar { background: #dc3545; margin-top: 15px; }
         .btn-grabar { background: #007bff; }
+        .btn-exportar { background: #17a2b8; margin-top: 15px; }
         .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #dee2e6; }
-        th { background-color: #f1f3f5; color: #495057; }
-        .total-cell { font-weight: bold; color: #28a745; font-size: 16px; }
+        .table-responsive { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11px; min-width: 500px;}
+        th, td { padding: 6px; text-align: center; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #f1f3f5; color: #495057; font-size: 10px;}
+        td:first-child { text-align: left; font-weight: bold; }
+        .total-cell { font-weight: bold; color: #28a745; font-size: 13px; background: #e9ecef;}
+        
+        /* Estilos para el bloque manual de otros productos */
+        .otros-block { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
+        .otros-title { margin: 0 0 8px 0; font-size: 14px; color: #d35400; }
+        .input-duo { display: flex; gap: 10px; }
+        .input-duo div { flex: 1; }
+        .input-duo label { font-size: 11px; color: #666; font-weight: normal; margin-bottom: 2px;}
+
         #estadoGrabacion { color: #dc3545; font-weight: bold; display: none; text-align: center; margin-top: 10px; animation: parpadeo 1s infinite; }
         @keyframes parpadeo { 50% { opacity: 0; } }
     </style>
@@ -34,8 +42,9 @@
             <div class="form-group">
                 <label>Seleccionar Variedad u Operación:</label>
                 <select name="sabor" id="sabor" onchange="toggleInputs()">
-                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto Mostrador)</option>
+                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto/Audio)</option>
                     <option value="CAJON_CONGELADOS">🧊 CAJÓN CONGELADOS (4 Sabores)</option>
+                    <option value="OTROS_PRODUCTOS">📝 OTROS (Pizzas, Quesos, Panchos)</option>
                     <optgroup label="Tradicionales">
                         <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
                         <option value="Humita (HM)">Humita (HM)</option>
@@ -62,9 +71,10 @@
                 </select>
             </div>
             
+            <!-- CAMPOS MANUALES PARA EMPANADAS -->
             <div id="manualInputs" style="display: none;">
                 <div class="form-group">
-                    <label>📦 Cajones COMPLETOS:</label>
+                    <label>📦 Cajones COMPLETOS (Congelador):</label>
                     <input type="number" name="cajones" id="cajones" value="0" min="0">
                 </div>
                 <div class="form-group">
@@ -77,43 +87,88 @@
                 </div>
             </div>
 
-            <!-- OPIONES DE FOTO -->
-            <div id="zonaFotos">
-                <div class="file-box">
-                    <label>📷 Opción 1: Abrir Cámara Directa</label>
-                    <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
+            <!-- CAMPOS MANUALES PARA OTROS PRODUCTOS (PIZZAS, PANCHOS, QUESO) -->
+            <div id="otrosInputs" style="display: none;">
+                <h4 style="text-align: center; color: #333; margin-top: 0;">🍕 Carga Manual de Productos</h4>
+                
+                <div class="otros-block">
+                    <h5 class="otros-title">Pizzas Grandes 32cm</h5>
+                    <div class="input-duo">
+                        <div><label>Crudas (Heladera)</label><input type="number" id="pg_crudas" value="0" min="0"></div>
+                        <div><label>Cocidas (Prepizzas)</label><input type="number" id="pg_cocidas" value="0" min="0"></div>
+                    </div>
                 </div>
-                <div class="file-box">
-                    <label>🖼️ Opción 2: Elegir de la Galería</label>
-                    <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
+
+                <div class="otros-block">
+                    <h5 class="otros-title">Pizzas Individuales 18cm</h5>
+                    <div class="input-duo">
+                        <div><label>Crudas (Heladera)</label><input type="number" id="pi_crudas" value="0" min="0"></div>
+                        <div><label>Cocidas (Prepizzas)</label><input type="number" id="pi_cocidas" value="0" min="0"></div>
+                    </div>
                 </div>
-                <button type="submit" id="btnCalcular">➕ Sumar al Inventario por Foto</button>
-            </div>
-            
-            <!-- OPCION DE DICTADO POR VOZ -->
-            <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
-                <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
-                <p style="font-size: 12px; color: #666; text-align: center;">Ej: "12 jamón y queso, 5 humitas..."</p>
-                <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
-                <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
+
+                <div class="otros-block">
+                    <h5 class="otros-title" style="color:#c0392b;">Panchos</h5>
+                    <div class="input-duo">
+                        <div><label>Crudos (Heladera)</label><input type="number" id="pancho_crudos" value="0" min="0"></div>
+                        <div><label>Cocidos (Prepanchos)</label><input type="number" id="pancho_cocidos" value="0" min="0"></div>
+                    </div>
+                </div>
+
+                <div class="otros-block">
+                    <h5 class="otros-title" style="color:#f39c12;">Quesos Muzarella</h5>
+                    <div class="input-duo">
+                        <div><label>Unidades Totales</label><input type="number" id="queso_unidades" value="0" min="0"></div>
+                    </div>
+                </div>
             </div>
 
+            <!-- OPIONES DE FOTO Y VOZ -->
+            <div id="zonaArchivos">
+                <div id="zonaFotos">
+                    <div class="file-box">
+                        <label>📷 Opción 1: Abrir Cámara Directa</label>
+                        <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
+                    </div>
+                    <div class="file-box">
+                        <label>🖼️ Opción 2: Elegir de la Galería</label>
+                        <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
+                    </div>
+                </div>
+                
+                <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
+                    <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
+                    <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
+                    <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
+                </div>
+            </div>
+            
+            <button type="submit" id="btnCalcular">➕ Procesar y Sumar</button>
         </form>
     </div>
 
     <div class="card">
-        <h3 style="margin-top: 0; text-align: center;">Resumen Acumulado</h3>
-        <table id="tablaResultados">
-            <thead>
-                <tr>
-                    <th>Sabor</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody id="tablaBody">
-                <tr><td colspan="2" style="text-align: center; color: #888;">Sin registros aún</td></tr>
-            </tbody>
-        </table>
+        <h3 style="margin-top: 0; text-align: center;">Resumen Detallado</h3>
+        <div class="table-responsive">
+            <table id="tablaResultados">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Vitr.</th>
+                        <th>Cong.</th>
+                        <th>Helad.</th>
+                        <th>Esp.</th>
+                        <th>Crudos</th>
+                        <th>Cocidos</th>
+                        <th>TOTAL</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaBody">
+                    <tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <button class="btn-exportar" onclick="exportarCSV()">📥 Exportar a Excel (CSV)</button>
         <button class="btn-limpiar" onclick="limpiarInventario()">🗑️ Borrar Todo y Empezar de Cero</button>
     </div>
 
@@ -129,21 +184,38 @@
         function toggleInputs() {
             const sabor = document.getElementById('sabor').value;
             const manualInputs = document.getElementById('manualInputs');
-            const zonaFotos = document.getElementById('zonaFotos');
+            const otrosInputs = document.getElementById('otrosInputs');
+            const zonaArchivos = document.getElementById('zonaArchivos');
             const zonaVoz = document.getElementById('zonaVoz');
+            const btnCalcular = document.getElementById('btnCalcular');
             
-            // Oculta campos manuales para las operaciones múltiples
-            if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
+            if (sabor === 'OTROS_PRODUCTOS') {
                 manualInputs.style.display = 'none';
+                zonaArchivos.style.display = 'none';
+                otrosInputs.style.display = 'block';
+                btnCalcular.innerText = "➕ Guardar Productos Manuales";
+            } else if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
+                manualInputs.style.display = 'none';
+                otrosInputs.style.display = 'none';
+                zonaArchivos.style.display = 'block';
+                btnCalcular.innerText = "➕ Procesar Foto";
             } else {
                 manualInputs.style.display = 'block';
+                otrosInputs.style.display = 'none';
+                zonaArchivos.style.display = 'block';
+                btnCalcular.innerText = "➕ Guardar (Con o Sin Foto)";
             }
             
-            // Muestra el botón de Voz SÓLO cuando elegimos la vitrina completa
             if (sabor === 'MOSTRADOR_COMPLETO') {
                 zonaVoz.style.display = 'block';
             } else {
                 zonaVoz.style.display = 'none';
+            }
+        }
+
+        function inicializarSabor(sabor) {
+            if (!inventario[sabor]) {
+                inventario[sabor] = { mostrador: 0, congelador: 0, heladera: 0, espera: 0, crudos: 0, cocidos: 0 };
             }
         }
 
@@ -152,16 +224,26 @@
             tbody.innerHTML = '';
             let hayDatos = false;
             
-            for (const [sabor, cantidad] of Object.entries(inventario)) {
-                if (cantidad > 0) {
+            for (const [sabor, loc] of Object.entries(inventario)) {
+                const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
+                if (total > 0) {
                     hayDatos = true;
                     const tr = document.createElement('tr');
-                    tr.innerHTML = `<td>${sabor}</td><td class="total-cell">${cantidad}</td>`;
+                    tr.innerHTML = `
+                        <td>${sabor}</td>
+                        <td>${loc.mostrador || '-'}</td>
+                        <td>${loc.congelador || '-'}</td>
+                        <td>${loc.heladera || '-'}</td>
+                        <td>${loc.espera || '-'}</td>
+                        <td>${loc.crudos || '-'}</td>
+                        <td>${loc.cocidos || '-'}</td>
+                        <td class="total-cell">${total}</td>
+                    `;
                     tbody.appendChild(tr);
                 }
             }
             if (!hayDatos) {
-                tbody.innerHTML = `<tr><td colspan="2" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
             }
         }
 
@@ -172,13 +254,107 @@
             }
         }
 
-        // ---- LÓGICA PARA ENVIAR FOTOS ----
+        function exportarCSV() {
+            let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos(Heladera/Unid);Cocidos(Pre);TOTAL\n';
+            for (const [sabor, loc] of Object.entries(inventario)) {
+                const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
+                if (total > 0) {
+                    csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
+                }
+            }
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", "Inventario_Central_Completo.csv");
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            const sabor = document.getElementById('sabor').value;
+            
+            // --- 1. SI ES EL MÓDULO MANUAL DE OTROS PRODUCTOS ---
+            if (sabor === 'OTROS_PRODUCTOS') {
+                const pgc = parseInt(document.getElementById('pg_crudas').value) || 0;
+                const pgo = parseInt(document.getElementById('pg_cocidas').value) || 0;
+                if (pgc > 0 || pgo > 0) {
+                    inicializarSabor('Pizza Grande 32cm');
+                    inventario['Pizza Grande 32cm'].crudos += pgc;
+                    inventario['Pizza Grande 32cm'].cocidos += pgo;
+                }
+
+                const pic = parseInt(document.getElementById('pi_crudas').value) || 0;
+                const pio = parseInt(document.getElementById('pi_cocidas').value) || 0;
+                if (pic > 0 || pio > 0) {
+                    inicializarSabor('Pizza Indiv. 18cm');
+                    inventario['Pizza Indiv. 18cm'].crudos += pic;
+                    inventario['Pizza Indiv. 18cm'].cocidos += pio;
+                }
+
+                const panc = parseInt(document.getElementById('pancho_crudos').value) || 0;
+                const pano = parseInt(document.getElementById('pancho_cocidos').value) || 0;
+                if (panc > 0 || pano > 0) {
+                    inicializarSabor('Panchos');
+                    inventario['Panchos'].crudos += panc;
+                    inventario['Panchos'].cocidos += pano;
+                }
+
+                const queso = parseInt(document.getElementById('queso_unidades').value) || 0;
+                if (queso > 0) {
+                    inicializarSabor('Quesos Muzarella');
+                    inventario['Quesos Muzarella'].crudos += queso; 
+                }
+
+                actualizarTabla();
+                document.getElementById('inventarioForm').reset();
+                toggleInputs();
+                return;
+            }
+
+            // Verificamos si adjuntó foto
+            const file1 = document.getElementById('foto').files.length;
+            const file2 = document.getElementById('foto_galeria').files.length;
+            const tieneFoto = (file1 > 0 || file2 > 0);
+
+            // --- 2. SABOR INDIVIDUAL SIN FOTO (100% MANUAL Y RÁPIDO) ---
+            if (sabor !== 'MOSTRADOR_COMPLETO' && sabor !== 'CAJON_CONGELADOS' && !tieneFoto) {
+                const cajones = parseInt(document.getElementById('cajones').value) || 0;
+                const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
+                const espera = parseInt(document.getElementById('espera').value) || 0;
+
+                if (cajones === 0 && bandejas === 0 && espera === 0) {
+                    alert("Ingresa alguna cantidad o adjunta una foto para la Inteligencia Artificial.");
+                    return;
+                }
+
+                const multiplicador = sabor.includes('Burrito') ? 14 : 30;
+                
+                inicializarSabor(sabor);
+                inventario[sabor].congelador += (cajones * multiplicador);
+                inventario[sabor].heladera += (bandejas * 40);
+                inventario[sabor].espera += espera;
+
+                actualizarTabla();
+                document.getElementById('inventarioForm').reset();
+                toggleInputs();
+                return; // Cortamos aquí para que NO gaste internet enviando nada a Google
+            }
+
+            // --- 3. VERIFICACIÓN DE SEGURIDAD PARA FOTOS ---
+            if (!tieneFoto) {
+                alert("Falta seleccionar una foto para que la Inteligencia Artificial la analice.");
+                return;
+            }
+
+            // --- 4. SI LLEGÓ HASTA AQUÍ, PROCEDEMOS NORMAL ENVIANDO LA FOTO A GOOGLE ---
             const btn = document.getElementById('btnCalcular');
             btn.innerText = 'Procesando Foto...';
             btn.disabled = true;
-
             const formData = new FormData(e.target);
 
             try {
@@ -190,27 +366,33 @@
                 } else if (data.tipo === 'mostrador') {
                     for (const [sigla, cant] of Object.entries(data.datos)) {
                         const nombreCompleto = mapaMostrador[sigla] || sigla;
-                        inventario[nombreCompleto] = (inventario[nombreCompleto] || 0) + parseInt(cant);
+                        inicializarSabor(nombreCompleto);
+                        inventario[nombreCompleto].mostrador += parseInt(cant);
                     }
                 } else if (data.tipo === 'cajon_multiple') {
                     for (const [nombreSabor, cant] of Object.entries(data.datos)) {
-                        inventario[nombreSabor] = (inventario[nombreSabor] || 0) + parseInt(cant);
+                        inicializarSabor(nombreSabor);
+                        inventario[nombreSabor].congelador += parseInt(cant);
                     }
                 } else if (data.tipo === 'individual') {
-                    inventario[data.sabor] = (inventario[data.sabor] || 0) + parseInt(data.total);
+                    inicializarSabor(data.sabor);
+                    inventario[data.sabor].congelador += parseInt(data.congelador);
+                    inventario[data.sabor].heladera += parseInt(data.heladera);
+                    inventario[data.sabor].espera += parseInt(data.espera);
                 }
                 actualizarTabla();
                 document.getElementById('inventarioForm').reset();
                 toggleInputs();
             } catch (error) {
-                alert('Ocurrió un error al procesar los datos de la foto.');
+                alert('Error procesando imagen. Intenta de nuevo.');
             } finally {
-                btn.innerText = '➕ Sumar al Inventario por Foto';
+                btn.innerText = '➕ Procesar Foto';
                 btn.disabled = false;
+                toggleInputs(); // Refresca el texto del botón al estado original
             }
         });
 
-        // ---- LÓGICA PARA DICTADO POR VOZ ----
+        // ---- LÓGICA PARA VOZ ----
         let mediaRecorder;
         let audioChunks = [];
         const btnGrabar = document.getElementById('btnGrabar');
@@ -218,14 +400,12 @@
 
         btnGrabar.addEventListener('click', async () => {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
-                // Detener grabación
                 mediaRecorder.stop();
                 btnGrabar.innerText = 'Procesando Audio...';
                 btnGrabar.style.background = '#6c757d';
                 btnGrabar.disabled = true;
                 estadoGrabacion.style.display = 'none';
             } else {
-                // Iniciar grabación (Pide permisos de micrófono)
                 try {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                     mediaRecorder = new MediaRecorder(stream);
@@ -245,7 +425,7 @@
                     btnGrabar.style.background = '#dc3545';
                     estadoGrabacion.style.display = 'block';
                 } catch (err) {
-                    alert('No se pudo acceder al micrófono. Por favor, dale permisos a la página. Error: ' + err.message);
+                    alert('Por favor permite el uso del micrófono.');
                 }
             }
         });
@@ -262,13 +442,14 @@
                     alert(data.error);
                 } else if (data.tipo === 'dictado') {
                     for (const [sabor, cant] of Object.entries(data.datos)) {
-                        inventario[sabor] = (inventario[sabor] || 0) + parseInt(cant);
+                        inicializarSabor(sabor);
+                        inventario[sabor].mostrador += parseInt(cant);
                     }
                     actualizarTabla();
-                    alert("¡Dictado procesado y sumado con éxito!");
+                    alert("¡Dictado sumado con éxito!");
                 }
             } catch (error) {
-                alert('Error al enviar el audio.');
+                alert('Error enviando audio.');
             } finally {
                 btnGrabar.innerText = '🔴 Iniciar Grabación';
                 btnGrabar.style.background = '#007bff';
