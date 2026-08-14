@@ -204,7 +204,7 @@
             const zonaVoz = document.getElementById('zonaVoz');
             const btnCalcular = document.getElementById('btnCalcular');
             
-            // --- NUEVA LÓGICA: Ocultar bandejas y espera para las congeladas directas ---
+            // --- NUEVA LÓGICA: Ocultar bandejas y espera para las congeladas directas y TODOS los burritos ---
             const grupoBandejas = document.getElementById('grupo_bandejas');
             const grupoEspera = document.getElementById('grupo_espera');
             const congeladosDirectos = [
@@ -216,7 +216,8 @@
                 "Puerro y Hongos"
             ];
 
-            if (congeladosDirectos.includes(sabor)) {
+            // Condición: Si está en la lista de congeladosDirectos O si el texto incluye la palabra "Burrito"
+            if (congeladosDirectos.includes(sabor) || sabor.includes('Burrito')) {
                 if (grupoBandejas) grupoBandejas.style.display = 'none';
                 if (grupoEspera) grupoEspera.style.display = 'none';
                 // Limpia el valor por seguridad si el usuario había escrito algo antes de cambiar
