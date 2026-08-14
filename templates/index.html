@@ -6,15 +6,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Inventario Rápido</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; padding: 20px; color: #333; }
-    .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
-    h2 { text-align: center; margin-bottom: 20px; color: #333; }
-    label { font-weight: 600; display: block; margin-top: 15px; margin-bottom: 5px; color: #555; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #fcfbf9; padding: 15px; color: #333; }
+    .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 450px; margin: 0 auto; }
+    h2 { text-align: center; margin-bottom: 20px; color: #333; font-size: 20px; }
+    label { font-weight: 600; display: block; margin-top: 15px; margin-bottom: 8px; color: #555; font-size: 14px; }
     select, input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
-    .btn-file { margin-top: 10px; display: block; font-size: 14px; color: #666; }
+    .file-input-wrapper { margin-top: 15px; font-size: 13px; color: #666; border: 1px dashed #ccc; padding: 10px; border-radius: 8px; background: #fafafa; }
     .btn-guardar { background-color: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
-    /* Clase para ocultar elementos */
-    .oculto { display: none; }
+    .hidden { display: none; }
   </style>
 </head>
 <body>
@@ -24,30 +23,32 @@
 
   <form id="formInventario">
     
-    <!-- Selector de Variedad -->
+    <!-- Selector de Variedad COMPLETO -->
     <label for="variedad">Seleccionar Variedad u Operación:</label>
     <select id="variedad" name="variedad" onchange="gestionarCampos()">
       <option value="">Seleccione una opción...</option>
-      <!-- Congeladas (Ocultan campos) -->
+      <!-- Congeladas (Se ocultarán Bandejas y Espera) -->
       <option value="Verdura">Verdura</option>
-      <option value="Cebolla y Queso">Cebolla y Queso</option>
+      <option value="Cebolla y Queso">Cebolla y Queso (CQ)</option>
       <option value="Pollo Curry">Pollo Curry</option>
       <option value="Carne Criolla">Carne Criolla</option>
       <option value="Choclo y Calabaza">Choclo y Calabaza</option>
       <option value="Puerro y Hongos">Puerro y Hongos</option>
-      <!-- Tradicionales (Muestran campos) -->
+      <!-- Tradicionales (Se mantienen visibles) -->
       <option value="Jamón y Queso">Jamón y Queso</option>
       <option value="Carne Suave">Carne Suave</option>
+      <option value="Humita">Humita</option>
+      <option value="Caprese">Caprese</option>
     </select>
 
-    <!-- Siempre Visible -->
+    <!-- Cajones (Siempre visible) -->
     <div id="cajones_container">
       <label>📦 Cajones COMPLETOS (Congelador):</label>
       <input type="number" name="cajones" value="0">
     </div>
 
-    <!-- Campos Dinámicos (Se ocultan) -->
-    <div id="campos_extra">
+    <!-- Campos Dinámicos (Se ocultan según el sabor) -->
+    <div id="campos_dinamicos">
       <label>🧊 Bandejas COMPLETAS (Heladera):</label>
       <input type="number" name="bandejas" value="0">
 
@@ -56,36 +57,40 @@
     </div>
 
     <!-- Botones de Foto -->
-    <label class="btn-file">📷 Opción 1: Abrir Cámara</label>
-    <input type="file" accept="image/*" capture="environment">
+    <div class="file-input-wrapper">
+      <label>📷 Opción 1: Abrir Cámara Directa</label>
+      <input type="file" accept="image/*" capture="environment">
+    </div>
     
-    <label class="btn-file">🖼️ Opción 2: Galería</label>
-    <input type="file" accept="image/*">
+    <div class="file-input-wrapper">
+      <label>🖼️ Opción 2: Elegir de la Galería</label>
+      <input type="file" accept="image/*">
+    </div>
 
-    <button type="button" class="btn-guardar">Guardar (Con o Sin Foto)</button>
+    <button type="button" class="btn-guardar">➕ Guardar (Con o Sin Foto)</button>
   </form>
 </div>
 
 <script>
   function gestionarCampos() {
     var select = document.getElementById("variedad");
-    var valor = select.value;
-    var camposExtra = document.getElementById("campos_extra");
+    var textoSeleccionado = select.options[select.selectedIndex].text.toLowerCase();
+    var bloqueDinamico = document.getElementById("campos_dinamicos");
     
-    // Lista de productos que NO pasan por bandejas/espera
-    var congelados = [
-      "Verdura", 
-      "Cebolla y Queso", 
-      "Pollo Curry", 
-      "Carne Criolla", 
-      "Choclo y Calabaza", 
-      "Puerro y Hongos"
-    ];
+    // Lista de productos congelados (basta con una parte del nombre)
+    var esCongelado = 
+      textoSeleccionado.includes("verdura") ||
+      textoSeleccionado.includes("cebolla y queso") ||
+      textoSeleccionado.includes("pollo curry") ||
+      textoSeleccionado.includes("carne criolla") ||
+      textoSeleccionado.includes("choclo y calabaza") ||
+      textoSeleccionado.includes("puerro y hongos");
 
-    if (congelados.includes(valor)) {
-      camposExtra.classList.add("oculto"); // Oculta
+    // Ocultar o mostrar
+    if (esCongelado) {
+      bloqueDinamico.classList.add("hidden");
     } else {
-      camposExtra.classList.remove("oculto"); // Muestra
+      bloqueDinamico.classList.remove("hidden");
     }
   }
 </script>
