@@ -24,11 +24,10 @@
         th, td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
         th { background-color: #f1f3f5; color: #495057; font-size: 10px; border-top: 1px solid #dee2e6; }
         
-        /* COLUMNAS FLOTANTES (El truco mágico) */
+        /* COLUMNAS FLOTANTES */
         .sticky-col-left { position: sticky; left: 0; background-color: white; z-index: 2; box-shadow: 2px 0 5px rgba(0,0,0,0.1); text-align: left; font-weight: bold; }
         .sticky-col-right { position: sticky; right: 0; background-color: #e9ecef; z-index: 2; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
         
-        /* Asegurar que las cabeceras flotantes queden por encima */
         thead th.sticky-col-left, thead th.sticky-col-right { background-color: #f1f3f5; z-index: 3; }
         tfoot td.sticky-col-left, tfoot td.sticky-col-right { background-color: #d4edda; z-index: 3; }
 
@@ -186,7 +185,9 @@
     </div>
 
     <script>
-        let inventario = {};
+        // RECUPERAR INVENTARIO DE LA MEMORIA DEL TELÉFONO O INICIAR UNO NUEVO
+        let inventario = JSON.parse(localStorage.getItem('inventario_app_empanadas')) || {};
+        
         const mapaMostrador = {
             "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
             "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
@@ -277,10 +278,18 @@
             } else {
                 tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
             }
+
+            // GUARDAR AUTOMÁTICAMENTE EN EL TELÉFONO CADA VEZ QUE LA TABLA CAMBIA
+            localStorage.setItem('inventario_app_empanadas', JSON.stringify(inventario));
         }
 
         function limpiarInventario() {
-            if(confirm("¿Seguro que quieres limpiar todo?")) { inventario = {}; actualizarTabla(); }
+            if(confirm("¿Seguro que quieres borrar todo el inventario y empezar de cero?")) { 
+                inventario = {}; 
+                // BORRAR TAMBIÉN LA MEMORIA DEL TELÉFONO
+                localStorage.removeItem('inventario_app_empanadas');
+                actualizarTabla(); 
+            }
         }
 
         function exportarCSV() {
@@ -392,7 +401,10 @@
                 }
             } catch (err) { alert('Error: ' + err.message); btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false; btnReintentar.style.display = 'block'; }
         }
+        
+        // Cargar datos al iniciar la página
         toggleInputs();
+        actualizarTabla();
     </script>
 </body>
 </html>
