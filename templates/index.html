@@ -1,410 +1,94 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Central</title>
-    <style>
-        body { font-family: -apple-system, Arial, sans-serif; padding: 15px; margin: 0 auto; max-width: 550px; background-color: #fdfaf6; }
-        h2 { color: #333; text-align: center; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); margin-bottom: 20px; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: #444; font-size: 14px; }
-        select, input[type="number"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px;}
-        .btn-limpiar { background: #dc3545; margin-top: 15px; }
-        .btn-grabar { background: #007bff; }
-        .btn-reintentar { background: #ffc107; color: #000; margin-top: 5px; display: none; }
-        .btn-exportar { background: #17a2b8; margin-top: 15px; }
-        .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
-        
-        /* Configuración de la tabla con Scroll */
-        .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 11px; min-width: 550px; }
-        th, td { padding: 6px 4px; text-align: center; border-bottom: 1px solid #dee2e6; vertical-align: middle; }
-        th { background-color: #f1f3f5; color: #495057; font-size: 10px; border-top: 1px solid #dee2e6; }
-        
-        /* COLUMNAS FLOTANTES */
-        .sticky-col-left { position: sticky; left: 0; background-color: white; z-index: 2; box-shadow: 2px 0 5px rgba(0,0,0,0.1); text-align: left; font-weight: bold; }
-        .sticky-col-right { position: sticky; right: 0; background-color: #e9ecef; z-index: 2; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
-        
-        thead th.sticky-col-left, thead th.sticky-col-right { background-color: #f1f3f5; z-index: 3; }
-        tfoot td.sticky-col-left, tfoot td.sticky-col-right { background-color: #d4edda; z-index: 3; }
-
-        .total-cell { font-weight: bold; color: #28a745; font-size: 14px; }
-        
-        .edit-input { width: 100%; min-width: 40px; padding: 8px 2px; border: 1px solid #ced4da; border-radius: 4px; text-align: center; font-size: 14px; box-sizing: border-box; background-color: #fff; color: #333; }
-        .edit-input:focus { border-color: #80bdff; outline: none; background-color: #e6f2ff; }
-        
-        .tfoot-row td { background-color: #d4edda; font-weight: bold; color: #155724; font-size: 14px; }
-
-        .otros-block { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px solid #dee2e6; }
-        .otros-title { margin: 0 0 8px 0; font-size: 14px; color: #d35400; }
-        .input-duo { display: flex; gap: 10px; }
-        .input-duo div { flex: 1; }
-        .input-duo label { font-size: 11px; color: #666; font-weight: normal; margin-bottom: 2px;}
-
-        #estadoGrabacion { color: #dc3545; font-weight: bold; display: none; text-align: center; margin-top: 10px; animation: parpadeo 1s infinite; }
-        @keyframes parpadeo { 50% { opacity: 0; } }
-    </style>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventario Rápido</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f8f9fa; padding: 20px; color: #333; }
+    .card { background: white; border-radius: 15px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
+    h2 { text-align: center; margin-bottom: 20px; color: #333; }
+    label { font-weight: 600; display: block; margin-top: 15px; margin-bottom: 5px; color: #555; }
+    select, input[type="number"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; box-sizing: border-box; }
+    .btn-file { margin-top: 10px; display: block; font-size: 14px; color: #666; }
+    .btn-guardar { background-color: #28a745; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 25px; cursor: pointer; }
+    /* Clase para ocultar elementos */
+    .oculto { display: none; }
+  </style>
 </head>
 <body>
-    <h2>📋 Inventario Rápido</h2>
+
+<div class="card">
+  <h2>📋 Inventario Rápido</h2>
+
+  <form id="formInventario">
     
-    <div class="card">
-        <form id="inventarioForm">
-            <div class="form-group">
-                <label>Seleccionar Variedad u Operación:</label>
-                <select name="sabor" id="sabor" onchange="toggleInputs()">
-                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto/Audio)</option>
-                    <option value="CAJON_CONGELADOS">🧊 CAJÓN CONGELADOS (4 Sabores)</option>
-                    <option value="OTROS_PRODUCTOS">📝 OTROS (Pizzas, Quesos, Panchos)</option>
-                    <optgroup label="Tradicionales">
-                        <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
-                        <option value="Humita (HM)">Humita (HM)</option>
-                        <option value="Cebolla y Queso (CQ)">Cebolla y Queso (CQ)</option>
-                        <option value="Capresse (CA)">Capresse (CA)</option>
-                        <option value="Roquefort y Jamón (RJ)">Roquefort y Jamón (RJ)</option>
-                        <option value="Bondiola (BD)">Bondiola (BD)</option>
-                        <option value="Carne Picante (CP)">Carne Picante (CP)</option>
-                        <option value="Pollo (PL)">Pollo (PL)</option>
-                        <option value="Cheese Burger (CB)">Cheese Burger (CB)</option>
-                        <option value="Carne Cuchillo (CC)">Carne Cuchillo (CC)</option>
-                        <option value="Carne Suave (CS)">Carne Suave (CS)</option>
-                    </optgroup>
-                    <optgroup label="Veganas / Integrales">
-                        <option value="Verdura">Verdura</option>
-                        <option value="Puerro y Hongos">Puerro y Hongos</option>
-                        <option value="Choclo y Calabaza">Choclo y Calabaza</option>
-                        <option value="Pollo al Curry">Pollo al Curry</option>
-                        <option value="Carne Criolla">Carne Criolla</option>
-                    </optgroup>
-                    <optgroup label="Burritos">
-                        <option value="Burrito de Ternera">Burrito de Ternera (Cajón x14)</option>
-                        <option value="Burrito de Cerdo">Burrito de Cerdo (Cajón x14)</option>
-                        <option value="Burrito de Pollo">Burrito de Pollo (Cajón x14)</option>
-                        <option value="Burrito de Vegetales">Burrito de Vegetales (Cajón x14)</option>
-                    </optgroup>
-                </select>
-            </div>
-            
-            <div id="manualInputs" style="display: none;">
-                <div class="form-group">
-                    <label>📦 Cajones COMPLETOS (Congelador):</label>
-                    <input type="number" name="cajones" id="cajones" value="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>🧊 Bandejas COMPLETAS (Heladera):</label>
-                    <input type="number" name="bandejas" id="bandejas" value="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>⏳ Área de Espera (Sueltas):</label>
-                    <input type="number" name="espera" id="espera" value="0" min="0">
-                </div>
-            </div>
+    <!-- Selector de Variedad -->
+    <label for="variedad">Seleccionar Variedad u Operación:</label>
+    <select id="variedad" name="variedad" onchange="gestionarCampos()">
+      <option value="">Seleccione una opción...</option>
+      <!-- Congeladas (Ocultan campos) -->
+      <option value="Verdura">Verdura</option>
+      <option value="Cebolla y Queso">Cebolla y Queso</option>
+      <option value="Pollo Curry">Pollo Curry</option>
+      <option value="Carne Criolla">Carne Criolla</option>
+      <option value="Choclo y Calabaza">Choclo y Calabaza</option>
+      <option value="Puerro y Hongos">Puerro y Hongos</option>
+      <!-- Tradicionales (Muestran campos) -->
+      <option value="Jamón y Queso">Jamón y Queso</option>
+      <option value="Carne Suave">Carne Suave</option>
+    </select>
 
-            <div id="otrosInputs" style="display: none;">
-                <h4 style="text-align: center; color: #333; margin-top: 0;">🍕 Carga Manual de Productos</h4>
-                <div class="otros-block">
-                    <h5 class="otros-title">Pizzas Grandes 32cm</h5>
-                    <div class="input-duo">
-                        <div><label>Crudas</label><input type="number" id="pg_crudas" value="0" min="0"></div>
-                        <div><label>Cocidas</label><input type="number" id="pg_cocidas" value="0" min="0"></div>
-                    </div>
-                </div>
-                <div class="otros-block">
-                    <h5 class="otros-title">Pizzas Individuales 18cm</h5>
-                    <div class="input-duo">
-                        <div><label>Crudas</label><input type="number" id="pi_crudas" value="0" min="0"></div>
-                        <div><label>Cocidas</label><input type="number" id="pi_cocidas" value="0" min="0"></div>
-                    </div>
-                </div>
-                <div class="otros-block">
-                    <h5 class="otros-title" style="color:#c0392b;">Panchos</h5>
-                    <div class="input-duo">
-                        <div><label>Crudos</label><input type="number" id="pancho_crudos" value="0" min="0"></div>
-                        <div><label>Cocidos</label><input type="number" id="pancho_cocidos" value="0" min="0"></div>
-                    </div>
-                </div>
-                <div class="otros-block">
-                    <h5 class="otros-title" style="color:#f39c12;">Quesos Muzarella</h5>
-                    <div class="input-duo">
-                        <div><label>Unidades Totales</label><input type="number" id="queso_unidades" value="0" min="0"></div>
-                    </div>
-                </div>
-            </div>
-
-            <div id="zonaArchivos">
-                <div id="zonaFotos">
-                    <div class="file-box">
-                        <label>📷 Opción 1: Abrir Cámara Directa</label>
-                        <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
-                    </div>
-                    <div class="file-box">
-                        <label>🖼️ Opción 2: Elegir de la Galería</label>
-                        <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
-                    </div>
-                </div>
-                <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
-                    <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
-                    <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
-                    <button type="button" id="btnReintentar" class="btn-reintentar" style="display:none;">🔄 Reintentar envío anterior</button>
-                    <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
-                </div>
-            </div>
-            
-            <button type="submit" id="btnCalcular">➕ Procesar y Sumar</button>
-        </form>
+    <!-- Siempre Visible -->
+    <div id="cajones_container">
+      <label>📦 Cajones COMPLETOS (Congelador):</label>
+      <input type="number" name="cajones" value="0">
     </div>
 
-    <div class="card">
-        <h3 style="margin-top: 0; text-align: center;">Vista Preliminar Editable</h3>
-        <p style="text-align: center; font-size: 11px; color: #666;">Desliza la tabla y corrige los números si es necesario.</p>
-        <div class="table-responsive">
-            <table id="tablaResultados">
-                <thead>
-                    <tr>
-                        <th class="sticky-col-left">Producto</th>
-                        <th>Vitr.</th>
-                        <th>Cong.</th>
-                        <th>Helad.</th>
-                        <th>Esp.</th>
-                        <th>Crudos</th>
-                        <th>Cocidos</th>
-                        <th class="sticky-col-right">TOTAL</th>
-                    </tr>
-                </thead>
-                <tbody id="tablaBody">
-                    <tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>
-                </tbody>
-                <tfoot id="tablaFoot"></tfoot>
-            </table>
-        </div>
-        <button class="btn-exportar" onclick="exportarCSV()">📥 Exportar a Excel (CSV)</button>
-        <button class="btn-limpiar" onclick="limpiarInventario()">🗑️ Borrar Todo y Empezar de Cero</button>
+    <!-- Campos Dinámicos (Se ocultan) -->
+    <div id="campos_extra">
+      <label>🧊 Bandejas COMPLETAS (Heladera):</label>
+      <input type="number" name="bandejas" value="0">
+
+      <label>⏳ Área de Espera (Sueltas):</label>
+      <input type="number" name="espera" value="0">
     </div>
 
-    <script>
-        // RECUPERAR INVENTARIO DE LA MEMORIA DEL TELÉFONO O INICIAR UNO NUEVO
-        let inventario = JSON.parse(localStorage.getItem('inventario_app_empanadas')) || {};
-        
-        const mapaMostrador = {
-            "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
-            "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
-            "CP": "Carne Picante (CP)", "PL": "Pollo (PL)", "CB": "Cheese Burger (CB)", 
-            "CC": "Carne Cuchillo (CC)", "CS": "Carne Suave (CS)"
-        };
+    <!-- Botones de Foto -->
+    <label class="btn-file">📷 Opción 1: Abrir Cámara</label>
+    <input type="file" accept="image/*" capture="environment">
+    
+    <label class="btn-file">🖼️ Opción 2: Galería</label>
+    <input type="file" accept="image/*">
 
-        function toggleInputs() {
-            const sabor = document.getElementById('sabor').value;
-            const manualInputs = document.getElementById('manualInputs');
-            const otrosInputs = document.getElementById('otrosInputs');
-            const zonaArchivos = document.getElementById('zonaArchivos');
-            const zonaVoz = document.getElementById('zonaVoz');
-            const btnCalcular = document.getElementById('btnCalcular');
-            
-            if (sabor === 'OTROS_PRODUCTOS') {
-                manualInputs.style.display = 'none';
-                zonaArchivos.style.display = 'none';
-                otrosInputs.style.display = 'block';
-                btnCalcular.innerText = "➕ Guardar Productos Manuales";
-            } else if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
-                manualInputs.style.display = 'none';
-                otrosInputs.style.display = 'none';
-                zonaArchivos.style.display = 'block';
-                btnCalcular.innerText = "➕ Procesar Foto";
-            } else {
-                manualInputs.style.display = 'block';
-                otrosInputs.style.display = 'none';
-                zonaArchivos.style.display = 'block';
-                btnCalcular.innerText = "➕ Guardar (Con o Sin Foto)";
-            }
-            zonaVoz.style.display = (sabor === 'MOSTRADOR_COMPLETO') ? 'block' : 'none';
-        }
+    <button type="button" class="btn-guardar">Guardar (Con o Sin Foto)</button>
+  </form>
+</div>
 
-        function inicializarSabor(sabor) {
-            if (!inventario[sabor]) {
-                inventario[sabor] = { mostrador: 0, congelador: 0, heladera: 0, espera: 0, crudos: 0, cocidos: 0 };
-            }
-        }
+<script>
+  function gestionarCampos() {
+    var select = document.getElementById("variedad");
+    var valor = select.value;
+    var camposExtra = document.getElementById("campos_extra");
+    
+    // Lista de productos que NO pasan por bandejas/espera
+    var congelados = [
+      "Verdura", 
+      "Cebolla y Queso", 
+      "Pollo Curry", 
+      "Carne Criolla", 
+      "Choclo y Calabaza", 
+      "Puerro y Hongos"
+    ];
 
-        function editarCelda(sabor, campo, valor) {
-            let val = parseInt(valor) || 0;
-            if (val < 0) val = 0;
-            inventario[sabor][campo] = val;
-            actualizarTabla();
-        }
+    if (congelados.includes(valor)) {
+      camposExtra.classList.add("oculto"); // Oculta
+    } else {
+      camposExtra.classList.remove("oculto"); // Muestra
+    }
+  }
+</script>
 
-        function actualizarTabla() {
-            const tbody = document.getElementById('tablaBody');
-            const tfoot = document.getElementById('tablaFoot');
-            tbody.innerHTML = ''; tfoot.innerHTML = '';
-            let hayDatos = false;
-            let sumas = { mostrador: 0, congelador: 0, heladera: 0, espera: 0, crudos: 0, cocidos: 0, totalGeneral: 0 };
-            
-            for (const [sabor, loc] of Object.entries(inventario)) {
-                const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
-                    hayDatos = true;
-                    sumas.mostrador += loc.mostrador; sumas.congelador += loc.congelador;
-                    sumas.heladera += loc.heladera; sumas.espera += loc.espera;
-                    sumas.crudos += loc.crudos; sumas.cocidos += loc.cocidos;
-                    sumas.totalGeneral += total;
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="sticky-col-left">${sabor}</td>
-                        <td><input type="number" class="edit-input" value="${loc.mostrador}" onchange="editarCelda('${sabor}', 'mostrador', this.value)"></td>
-                        <td><input type="number" class="edit-input" value="${loc.congelador}" onchange="editarCelda('${sabor}', 'congelador', this.value)"></td>
-                        <td><input type="number" class="edit-input" value="${loc.heladera}" onchange="editarCelda('${sabor}', 'heladera', this.value)"></td>
-                        <td><input type="number" class="edit-input" value="${loc.espera}" onchange="editarCelda('${sabor}', 'espera', this.value)"></td>
-                        <td><input type="number" class="edit-input" value="${loc.crudos}" onchange="editarCelda('${sabor}', 'crudos', this.value)"></td>
-                        <td><input type="number" class="edit-input" value="${loc.cocidos}" onchange="editarCelda('${sabor}', 'cocidos', this.value)"></td>
-                        <td class="sticky-col-right total-cell">${total}</td>`;
-                    tbody.appendChild(tr);
-                }
-            }
-            if (hayDatos) {
-                tfoot.innerHTML = `
-                    <tr class="tfoot-row">
-                        <td class="sticky-col-left" style="text-align: right;">TOTAL:</td>
-                        <td>${sumas.mostrador}</td>
-                        <td>${sumas.congelador}</td>
-                        <td>${sumas.heladera}</td>
-                        <td>${sumas.espera}</td>
-                        <td>${sumas.crudos}</td>
-                        <td>${sumas.cocidos}</td>
-                        <td class="sticky-col-right">${sumas.totalGeneral}</td>
-                    </tr>`;
-            } else {
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: #888;">Sin registros aún</td></tr>`;
-            }
-
-            // GUARDAR AUTOMÁTICAMENTE EN EL TELÉFONO CADA VEZ QUE LA TABLA CAMBIA
-            localStorage.setItem('inventario_app_empanadas', JSON.stringify(inventario));
-        }
-
-        function limpiarInventario() {
-            if(confirm("¿Seguro que quieres borrar todo el inventario y empezar de cero?")) { 
-                inventario = {}; 
-                // BORRAR TAMBIÉN LA MEMORIA DEL TELÉFONO
-                localStorage.removeItem('inventario_app_empanadas');
-                actualizarTabla(); 
-            }
-        }
-
-        function exportarCSV() {
-            let csv = '\uFEFFProducto;Vitrina;Congelador;Heladera;Espera;Crudos;Cocidos;TOTAL\n';
-            for (const [sabor, loc] of Object.entries(inventario)) {
-                const total = loc.mostrador + loc.congelador + loc.heladera + loc.espera + loc.crudos + loc.cocidos;
-                if (total > 0 || loc.mostrador>0 || loc.congelador>0 || loc.heladera>0 || loc.espera>0 || loc.crudos>0 || loc.cocidos>0) {
-                    csv += `${sabor};${loc.mostrador};${loc.congelador};${loc.heladera};${loc.espera};${loc.crudos};${loc.cocidos};${total}\n`;
-                }
-            }
-            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            const url = URL.createObjectURL(blob);
-            link.setAttribute("href", url); link.setAttribute("download", "Inventario.csv");
-            document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        }
-
-        document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const sabor = document.getElementById('sabor').value;
-            if (sabor === 'OTROS_PRODUCTOS') {
-                const pgc = parseInt(document.getElementById('pg_crudas').value) || 0;
-                const pgo = parseInt(document.getElementById('pg_cocidas').value) || 0;
-                if (pgc > 0 || pgo > 0) { inicializarSabor('Pizza Grande 32cm'); inventario['Pizza Grande 32cm'].crudos += pgc; inventario['Pizza Grande 32cm'].cocidos += pgo; }
-                const pic = parseInt(document.getElementById('pi_crudas').value) || 0;
-                const pio = parseInt(document.getElementById('pi_cocidas').value) || 0;
-                if (pic > 0 || pio > 0) { inicializarSabor('Pizza Indiv. 18cm'); inventario['Pizza Indiv. 18cm'].crudos += pic; inventario['Pizza Indiv. 18cm'].cocidos += pio; }
-                const panc = parseInt(document.getElementById('pancho_crudos').value) || 0;
-                const pano = parseInt(document.getElementById('pancho_cocidos').value) || 0;
-                if (panc > 0 || pano > 0) { inicializarSabor('Panchos'); inventario['Panchos'].crudos += panc; inventario['Panchos'].cocidos += pano; }
-                const queso = parseInt(document.getElementById('queso_unidades').value) || 0;
-                if (queso > 0) { inicializarSabor('Quesos Muzarella'); inventario['Quesos Muzarella'].crudos += queso; }
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
-            }
-
-            const file1 = document.getElementById('foto').files.length;
-            const file2 = document.getElementById('foto_galeria').files.length;
-            const tieneFoto = (file1 > 0 || file2 > 0);
-
-            if (sabor !== 'MOSTRADOR_COMPLETO' && sabor !== 'CAJON_CONGELADOS' && !tieneFoto) {
-                const cajones = parseInt(document.getElementById('cajones').value) || 0;
-                const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
-                const espera = parseInt(document.getElementById('espera').value) || 0;
-                const multiplicador = sabor.includes('Burrito') ? 14 : 30;
-                inicializarSabor(sabor);
-                inventario[sabor].congelador += (cajones * multiplicador);
-                inventario[sabor].heladera += (bandejas * 40);
-                inventario[sabor].espera += espera;
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
-            }
-
-            if (!tieneFoto) { alert("Falta foto."); return; }
-            const btn = document.getElementById('btnCalcular');
-            btn.innerText = 'Procesando...'; btn.disabled = true;
-            const formData = new FormData(e.target);
-            try {
-                const response = await fetch('/calcular', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (data.error) alert(data.error);
-                else if (data.tipo === 'mostrador') {
-                    for (const [sigla, cant] of Object.entries(data.datos)) {
-                        const nombre = mapaMostrador[sigla] || sigla;
-                        inicializarSabor(nombre); inventario[nombre].mostrador += parseInt(cant);
-                    }
-                } else if (data.tipo === 'cajon_multiple') {
-                    for (const [sabor, cant] of Object.entries(data.datos)) {
-                        inicializarSabor(sabor); inventario[sabor].congelador += parseInt(cant);
-                    }
-                } else if (data.tipo === 'individual') {
-                    inicializarSabor(data.sabor);
-                    inventario[data.sabor].congelador += parseInt(data.congelador);
-                    inventario[data.sabor].heladera += parseInt(data.heladera);
-                    inventario[data.sabor].espera += parseInt(data.espera);
-                }
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs();
-            } catch (error) { alert('Error procesando.'); } finally { btn.innerText = '➕ Procesar Foto'; btn.disabled = false; toggleInputs(); }
-        });
-
-        let mediaRecorder, audioChunks = [], lastAudioBlob = null;
-        const btnGrabar = document.getElementById('btnGrabar'), btnReintentar = document.getElementById('btnReintentar'), estadoGrabacion = document.getElementById('estadoGrabacion');
-
-        btnGrabar.addEventListener('click', async () => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop(); btnGrabar.innerText = 'Procesando...'; btnGrabar.disabled = true;
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream); audioChunks = []; btnReintentar.style.display = 'none';
-                    mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
-                    mediaRecorder.addEventListener('stop', async () => { lastAudioBlob = new Blob(audioChunks, { type: 'audio/webm' }); enviarAudio(lastAudioBlob); });
-                    mediaRecorder.start(); btnGrabar.innerText = '⏹️ Detener'; btnGrabar.style.background = '#dc3545'; estadoGrabacion.style.display = 'block';
-                } catch (err) { alert('Permite micro.'); }
-            }
-        });
-
-        btnReintentar.addEventListener('click', () => { if (lastAudioBlob) enviarAudio(lastAudioBlob); });
-
-        async function enviarAudio(blob) {
-            btnGrabar.disabled = true; btnGrabar.innerText = 'Enviando...'; btnReintentar.style.display = 'none'; estadoGrabacion.style.display = 'none';
-            const formData = new FormData(); formData.append('audio', blob, 'dictado.webm');
-            try {
-                const response = await fetch('/dictar', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-                else if (data.tipo === 'dictado') {
-                    for (const [sabor, cant] of Object.entries(data.datos)) { inicializarSabor(sabor); inventario[sabor].mostrador += parseInt(cant); }
-                    actualizarTabla(); alert("¡Dictado procesado!");
-                    btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false;
-                }
-            } catch (err) { alert('Error: ' + err.message); btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false; btnReintentar.style.display = 'block'; }
-        }
-        
-        // Cargar datos al iniciar la página
-        toggleInputs();
-        actualizarTabla();
-    </script>
 </body>
 </html>
