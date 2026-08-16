@@ -86,14 +86,27 @@
                     <label>🏪 Unidades en Vitrina (Mostrador):</label>
                     <input type="number" name="mostrador" id="mostrador" value="0" min="0">
                 </div>
+                
                 <div class="form-group">
                     <label>📦 Cajones COMPLETOS (Congelador):</label>
                     <input type="number" name="cajones" id="cajones" value="0" min="0">
                 </div>
+                <!-- NUEVO CAMPO: Cajón incompleto -->
+                <div class="form-group" id="grupo_cajones_sueltas">
+                    <label>📦 Unidades Sueltas (Cajón Incompleto):</label>
+                    <input type="number" name="cajones_sueltas" id="cajones_sueltas" value="0" min="0">
+                </div>
+
                 <div class="form-group" id="grupo_bandejas">
                     <label>🧊 Bandejas COMPLETAS (Heladera):</label>
                     <input type="number" name="bandejas" id="bandejas" value="0" min="0">
                 </div>
+                <!-- NUEVO CAMPO: Bandeja incompleta -->
+                <div class="form-group" id="grupo_bandejas_sueltas">
+                    <label>🧊 Unidades Sueltas (Bandeja Incompleta):</label>
+                    <input type="number" name="bandejas_sueltas" id="bandejas_sueltas" value="0" min="0">
+                </div>
+
                 <div class="form-group" id="grupo_espera">
                     <label>⏳ Área de Espera (Sueltas):</label>
                     <input type="number" name="espera" id="espera" value="0" min="0">
@@ -181,9 +194,11 @@
                 btnCalcular.style.display = 'block';
             }
 
-            // Ocultar bandejas y espera para congeladas directas y TODOS los burritos
+            // Elementos dinámicos
             const grupoBandejas = document.getElementById('grupo_bandejas');
+            const grupoBandejasSueltas = document.getElementById('grupo_bandejas_sueltas');
             const grupoEspera = document.getElementById('grupo_espera');
+            
             const congeladosDirectos = [
                 "Verdura", 
                 "Cebolla y Queso (CQ)", 
@@ -193,13 +208,20 @@
                 "Puerro y Hongos"
             ];
 
+            // Ocultar bandejas y espera para congeladas directas y TODOS los burritos
             if (congeladosDirectos.includes(sabor) || sabor.includes('Burrito')) {
                 if (grupoBandejas) grupoBandejas.style.display = 'none';
+                if (grupoBandejasSueltas) grupoBandejasSueltas.style.display = 'none';
                 if (grupoEspera) grupoEspera.style.display = 'none';
+                
+                // Reiniciar a cero para que no haya sumas accidentales "fantasma"
                 document.getElementById('bandejas').value = 0;
+                document.getElementById('bandejas_sueltas').value = 0;
                 document.getElementById('espera').value = 0;
             } else {
+                // Mostrar para los demás productos
                 if (grupoBandejas) grupoBandejas.style.display = 'block';
+                if (grupoBandejasSueltas) grupoBandejasSueltas.style.display = 'block';
                 if (grupoEspera) grupoEspera.style.display = 'block';
             }
 
@@ -326,18 +348,24 @@
                 return;
             }
 
-            // Si elige un sabor de empanada o burrito
+            // Extracción de datos del formulario para empanadas/burritos
             const mostrador = parseInt(document.getElementById('mostrador').value) || 0;
             const cajones = parseInt(document.getElementById('cajones').value) || 0;
+            const cajones_sueltas = parseInt(document.getElementById('cajones_sueltas').value) || 0;
+            
             const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
+            const bandejas_sueltas = parseInt(document.getElementById('bandejas_sueltas').value) || 0;
+            
             const espera = parseInt(document.getElementById('espera').value) || 0;
             
             const multiplicador = sabor.includes('Burrito') ? 14 : 30;
             
             inicializarSabor(sabor);
+            
+            // Asignación con suma de las unidades sueltas extra
             inventario[sabor].mostrador += mostrador;
-            inventario[sabor].congelador += (cajones * multiplicador);
-            inventario[sabor].heladera += (bandejas * 40);
+            inventario[sabor].congelador += (cajones * multiplicador) + cajones_sueltas;
+            inventario[sabor].heladera += (bandejas * 40) + bandejas_sueltas;
             inventario[sabor].espera += espera;
             
             actualizarTabla(); 
