@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario Central</title>
+    <title>Inventario Central (Modo Manual)</title>
     <style>
         body { font-family: -apple-system, Arial, sans-serif; padding: 15px; margin: 0 auto; max-width: 550px; background-color: #fdfaf6; }
         h2 { color: #333; text-align: center; }
@@ -13,10 +13,7 @@
         select, input[type="number"] { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 16px; }
         button { width: 100%; padding: 15px; background: #28a745; color: white; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; cursor: pointer; margin-top: 10px;}
         .btn-limpiar { background: #dc3545; margin-top: 15px; }
-        .btn-grabar { background: #007bff; }
-        .btn-reintentar { background: #ffc107; color: #000; margin-top: 5px; display: none; }
         .btn-exportar { background: #17a2b8; margin-top: 15px; }
-        .file-box { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 12px; border: 1px dashed #adb5bd; }
         
         /* Configuración de la tabla con Scroll */
         .table-responsive { overflow-x: auto; margin-top: 10px; border-radius: 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.05); }
@@ -43,21 +40,17 @@
         .input-duo { display: flex; gap: 10px; }
         .input-duo div { flex: 1; }
         .input-duo label { font-size: 11px; color: #666; font-weight: normal; margin-bottom: 2px;}
-
-        #estadoGrabacion { color: #dc3545; font-weight: bold; display: none; text-align: center; margin-top: 10px; animation: parpadeo 1s infinite; }
-        @keyframes parpadeo { 50% { opacity: 0; } }
     </style>
 </head>
 <body>
-    <h2>📋 Inventario Rápido</h2>
+    <h2>📋 Inventario Manual Rápido</h2>
     
     <div class="card">
         <form id="inventarioForm">
             <div class="form-group">
                 <label>Seleccionar Variedad u Operación:</label>
-                <select name="sabor" id="sabor" onchange="toggleInputs()">
-                    <option value="MOSTRADOR_COMPLETO">📸 VITRINA COMPLETA (Foto/Audio)</option>
-                    <option value="CAJON_CONGELADOS">🧊 CAJÓN CONGELADOS (4 Sabores)</option>
+                <select name="sabor" id="sabor" onchange="toggleInputs()" required>
+                    <option value="" selected disabled>-- Seleccione un Producto --</option>
                     <option value="OTROS_PRODUCTOS">📝 OTROS (Pizzas, Quesos, Panchos)</option>
                     <optgroup label="Tradicionales">
                         <option value="Jamón y Queso (JQ)">Jamón y Queso (JQ)</option>
@@ -89,11 +82,14 @@
             </div>
             
             <div id="manualInputs" style="display: none;">
+                <div class="form-group" id="grupo_mostrador">
+                    <label>🏪 Unidades en Vitrina (Mostrador):</label>
+                    <input type="number" name="mostrador" id="mostrador" value="0" min="0">
+                </div>
                 <div class="form-group">
                     <label>📦 Cajones COMPLETOS (Congelador):</label>
                     <input type="number" name="cajones" id="cajones" value="0" min="0">
                 </div>
-                <!-- Se agregaron IDs a estos dos bloques para poder ocultarlos -->
                 <div class="form-group" id="grupo_bandejas">
                     <label>🧊 Bandejas COMPLETAS (Heladera):</label>
                     <input type="number" name="bandejas" id="bandejas" value="0" min="0">
@@ -134,27 +130,8 @@
                     </div>
                 </div>
             </div>
-
-            <div id="zonaArchivos">
-                <div id="zonaFotos">
-                    <div class="file-box">
-                        <label>📷 Opción 1: Abrir Cámara Directa</label>
-                        <input type="file" name="foto" id="foto" accept="image/*" capture="environment">
-                    </div>
-                    <div class="file-box">
-                        <label>🖼️ Opción 2: Elegir de la Galería</label>
-                        <input type="file" name="foto_galeria" id="foto_galeria" accept="image/*">
-                    </div>
-                </div>
-                <div id="zonaVoz" class="file-box" style="margin-top: 15px;">
-                    <label style="text-align: center; font-size: 16px;">🎙️ Dictar Mostrador por Voz</label>
-                    <button type="button" id="btnGrabar" class="btn-grabar">🔴 Iniciar Grabación</button>
-                    <button type="button" id="btnReintentar" class="btn-reintentar" style="display:none;">🔄 Reintentar envío anterior</button>
-                    <p id="estadoGrabacion">Grabando... (Habla ahora)</p>
-                </div>
-            </div>
             
-            <button type="submit" id="btnCalcular">➕ Procesar y Sumar</button>
+            <button type="submit" id="btnCalcular" style="display: none;">➕ Añadir al Inventario</button>
         </form>
     </div>
 
@@ -188,23 +165,23 @@
     <script>
         // RECUPERAR INVENTARIO DE LA MEMORIA DEL TELÉFONO O INICIAR UNO NUEVO
         let inventario = JSON.parse(localStorage.getItem('inventario_app_empanadas')) || {};
-        
-        const mapaMostrador = {
-            "JQ": "Jamón y Queso (JQ)", "HM": "Humita (HM)", "CQ": "Cebolla y Queso (CQ)", 
-            "CA": "Capresse (CA)", "RJ": "Roquefort y Jamón (RJ)", "BD": "Bondiola (BD)", 
-            "CP": "Carne Picante (CP)", "PL": "Pollo (PL)", "CB": "Cheese Burger (CB)", 
-            "CC": "Carne Cuchillo (CC)", "CS": "Carne Suave (CS)"
-        };
 
         function toggleInputs() {
             const sabor = document.getElementById('sabor').value;
             const manualInputs = document.getElementById('manualInputs');
             const otrosInputs = document.getElementById('otrosInputs');
-            const zonaArchivos = document.getElementById('zonaArchivos');
-            const zonaVoz = document.getElementById('zonaVoz');
             const btnCalcular = document.getElementById('btnCalcular');
             
-            // --- NUEVA LÓGICA: Ocultar bandejas y espera para las congeladas directas y TODOS los burritos ---
+            if (!sabor) {
+                manualInputs.style.display = 'none';
+                otrosInputs.style.display = 'none';
+                btnCalcular.style.display = 'none';
+                return;
+            } else {
+                btnCalcular.style.display = 'block';
+            }
+
+            // Ocultar bandejas y espera para congeladas directas y TODOS los burritos
             const grupoBandejas = document.getElementById('grupo_bandejas');
             const grupoEspera = document.getElementById('grupo_espera');
             const congeladosDirectos = [
@@ -216,36 +193,25 @@
                 "Puerro y Hongos"
             ];
 
-            // Condición: Si está en la lista de congeladosDirectos O si el texto incluye la palabra "Burrito"
             if (congeladosDirectos.includes(sabor) || sabor.includes('Burrito')) {
                 if (grupoBandejas) grupoBandejas.style.display = 'none';
                 if (grupoEspera) grupoEspera.style.display = 'none';
-                // Limpia el valor por seguridad si el usuario había escrito algo antes de cambiar
                 document.getElementById('bandejas').value = 0;
                 document.getElementById('espera').value = 0;
             } else {
                 if (grupoBandejas) grupoBandejas.style.display = 'block';
                 if (grupoEspera) grupoEspera.style.display = 'block';
             }
-            // ----------------------------------------------------------------------------
 
             if (sabor === 'OTROS_PRODUCTOS') {
                 manualInputs.style.display = 'none';
-                zonaArchivos.style.display = 'none';
                 otrosInputs.style.display = 'block';
                 btnCalcular.innerText = "➕ Guardar Productos Manuales";
-            } else if (sabor === 'MOSTRADOR_COMPLETO' || sabor === 'CAJON_CONGELADOS') {
-                manualInputs.style.display = 'none';
-                otrosInputs.style.display = 'none';
-                zonaArchivos.style.display = 'block';
-                btnCalcular.innerText = "➕ Procesar Foto";
             } else {
                 manualInputs.style.display = 'block';
                 otrosInputs.style.display = 'none';
-                zonaArchivos.style.display = 'block';
-                btnCalcular.innerText = "➕ Guardar (Con o Sin Foto)";
+                btnCalcular.innerText = "➕ Añadir al Inventario";
             }
-            zonaVoz.style.display = (sabor === 'MOSTRADOR_COMPLETO') ? 'block' : 'none';
         }
 
         function inicializarSabor(sabor) {
@@ -333,103 +299,53 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
-        document.getElementById('inventarioForm').addEventListener('submit', async (e) => {
+        document.getElementById('inventarioForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const sabor = document.getElementById('sabor').value;
+            
+            // Si elige "Otros Productos"
             if (sabor === 'OTROS_PRODUCTOS') {
                 const pgc = parseInt(document.getElementById('pg_crudas').value) || 0;
                 const pgo = parseInt(document.getElementById('pg_cocidas').value) || 0;
                 if (pgc > 0 || pgo > 0) { inicializarSabor('Pizza Grande 32cm'); inventario['Pizza Grande 32cm'].crudos += pgc; inventario['Pizza Grande 32cm'].cocidos += pgo; }
+                
                 const pic = parseInt(document.getElementById('pi_crudas').value) || 0;
                 const pio = parseInt(document.getElementById('pi_cocidas').value) || 0;
                 if (pic > 0 || pio > 0) { inicializarSabor('Pizza Indiv. 18cm'); inventario['Pizza Indiv. 18cm'].crudos += pic; inventario['Pizza Indiv. 18cm'].cocidos += pio; }
+                
                 const panc = parseInt(document.getElementById('pancho_crudos').value) || 0;
                 const pano = parseInt(document.getElementById('pancho_cocidos').value) || 0;
                 if (panc > 0 || pano > 0) { inicializarSabor('Panchos'); inventario['Panchos'].crudos += panc; inventario['Panchos'].cocidos += pano; }
+                
                 const queso = parseInt(document.getElementById('queso_unidades').value) || 0;
                 if (queso > 0) { inicializarSabor('Quesos Muzarella'); inventario['Quesos Muzarella'].crudos += queso; }
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
+                
+                actualizarTabla(); 
+                document.getElementById('inventarioForm').reset(); 
+                toggleInputs(); 
+                return;
             }
 
-            const file1 = document.getElementById('foto').files.length;
-            const file2 = document.getElementById('foto_galeria').files.length;
-            const tieneFoto = (file1 > 0 || file2 > 0);
-
-            if (sabor !== 'MOSTRADOR_COMPLETO' && sabor !== 'CAJON_CONGELADOS' && !tieneFoto) {
-                const cajones = parseInt(document.getElementById('cajones').value) || 0;
-                const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
-                const espera = parseInt(document.getElementById('espera').value) || 0;
-                const multiplicador = sabor.includes('Burrito') ? 14 : 30;
-                inicializarSabor(sabor);
-                inventario[sabor].congelador += (cajones * multiplicador);
-                inventario[sabor].heladera += (bandejas * 40);
-                inventario[sabor].espera += espera;
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs(); return;
-            }
-
-            if (!tieneFoto) { alert("Falta foto."); return; }
-            const btn = document.getElementById('btnCalcular');
-            btn.innerText = 'Procesando...'; btn.disabled = true;
-            const formData = new FormData(e.target);
-            try {
-                const response = await fetch('/calcular', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (data.error) alert(data.error);
-                else if (data.tipo === 'mostrador') {
-                    for (const [sigla, cant] of Object.entries(data.datos)) {
-                        const nombre = mapaMostrador[sigla] || sigla;
-                        inicializarSabor(nombre); inventario[nombre].mostrador += parseInt(cant);
-                    }
-                } else if (data.tipo === 'cajon_multiple') {
-                    for (const [sabor, cant] of Object.entries(data.datos)) {
-                        inicializarSabor(sabor); inventario[sabor].congelador += parseInt(cant);
-                    }
-                } else if (data.tipo === 'individual') {
-                    inicializarSabor(data.sabor);
-                    inventario[data.sabor].congelador += parseInt(data.congelador);
-                    inventario[data.sabor].heladera += parseInt(data.heladera);
-                    inventario[data.sabor].espera += parseInt(data.espera);
-                }
-                actualizarTabla(); document.getElementById('inventarioForm').reset(); toggleInputs();
-            } catch (error) { alert('Error procesando.'); } finally { btn.innerText = '➕ Procesar Foto'; btn.disabled = false; toggleInputs(); }
+            // Si elige un sabor de empanada o burrito
+            const mostrador = parseInt(document.getElementById('mostrador').value) || 0;
+            const cajones = parseInt(document.getElementById('cajones').value) || 0;
+            const bandejas = parseInt(document.getElementById('bandejas').value) || 0;
+            const espera = parseInt(document.getElementById('espera').value) || 0;
+            
+            const multiplicador = sabor.includes('Burrito') ? 14 : 30;
+            
+            inicializarSabor(sabor);
+            inventario[sabor].mostrador += mostrador;
+            inventario[sabor].congelador += (cajones * multiplicador);
+            inventario[sabor].heladera += (bandejas * 40);
+            inventario[sabor].espera += espera;
+            
+            actualizarTabla(); 
+            document.getElementById('inventarioForm').reset(); 
+            toggleInputs();
         });
 
-        let mediaRecorder, audioChunks = [], lastAudioBlob = null;
-        const btnGrabar = document.getElementById('btnGrabar'), btnReintentar = document.getElementById('btnReintentar'), estadoGrabacion = document.getElementById('estadoGrabacion');
-
-        btnGrabar.addEventListener('click', async () => {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop(); btnGrabar.innerText = 'Procesando...'; btnGrabar.disabled = true;
-            } else {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                    mediaRecorder = new MediaRecorder(stream); audioChunks = []; btnReintentar.style.display = 'none';
-                    mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
-                    mediaRecorder.addEventListener('stop', async () => { lastAudioBlob = new Blob(audioChunks, { type: 'audio/webm' }); enviarAudio(lastAudioBlob); });
-                    mediaRecorder.start(); btnGrabar.innerText = '⏹️ Detener'; btnGrabar.style.background = '#dc3545'; estadoGrabacion.style.display = 'block';
-                } catch (err) { alert('Permite micro.'); }
-            }
-        });
-
-        btnReintentar.addEventListener('click', () => { if (lastAudioBlob) enviarAudio(lastAudioBlob); });
-
-        async function enviarAudio(blob) {
-            btnGrabar.disabled = true; btnGrabar.innerText = 'Enviando...'; btnReintentar.style.display = 'none'; estadoGrabacion.style.display = 'none';
-            const formData = new FormData(); formData.append('audio', blob, 'dictado.webm');
-            try {
-                const response = await fetch('/dictar', { method: 'POST', body: formData });
-                const data = await response.json();
-                if (data.error) throw new Error(data.error);
-                else if (data.tipo === 'dictado') {
-                    for (const [sabor, cant] of Object.entries(data.datos)) { inicializarSabor(sabor); inventario[sabor].mostrador += parseInt(cant); }
-                    actualizarTabla(); alert("¡Dictado procesado!");
-                    btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false;
-                }
-            } catch (err) { alert('Error: ' + err.message); btnGrabar.innerText = '🔴 Iniciar Grabación'; btnGrabar.style.background = '#007bff'; btnGrabar.disabled = false; btnReintentar.style.display = 'block'; }
-        }
-        
         // Cargar datos al iniciar la página
-        toggleInputs();
         actualizarTabla();
     </script>
 </body>
